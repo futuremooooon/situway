@@ -272,6 +272,23 @@ textarea.input{resize:vertical;min-height:120px;line-height:1.55}
 .fpick button{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:6px 10px;font-size:14px;font-weight:600;cursor:pointer}
 .fpick button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-text)}
 .rcontent{font-size:14.5px;line-height:1.45}
+.lvbanner{display:flex;flex-direction:column;gap:4px;padding:16px;border-radius:16px;background:var(--brand-soft);color:var(--brand-text)}
+.lvbanner b{font-size:22px;line-height:1.3}
+.lvbanner span{font-size:15px}
+.lvbanner.soon{background:var(--xp-soft);color:var(--xp-ink)}
+.lvbanner.now{background:#E0384A;color:#fff;animation:lvpulse 1s ease-in-out 3}
+.lvbanner.walk{background:var(--surface-2);color:var(--ink)}
+@keyframes lvpulse{50%{transform:scale(1.02)}}
+.lvstops{list-style:none;margin:6px 0 0;padding:0 0 0 14px;border-left:3px solid var(--line);display:grid;gap:6px;max-height:260px;overflow:auto}
+.lvstops li{position:relative;font-size:15px;color:var(--muted)}
+.lvstops li::before{content:"";position:absolute;left:-22px;top:5px;width:11px;height:11px;border-radius:50%;background:var(--surface);border:2px solid var(--line)}
+.lvstops li.past{opacity:.5}
+.lvstops li.now{color:var(--ink);font-weight:700}
+.lvstops li.now::before{background:var(--brand);border-color:var(--brand)}
+.lvstops li.end{color:var(--ink)}
+.lvstops em{font-style:normal;font-size:12px;color:var(--brand-text);margin-left:4px}
+.lvst,.lvpath{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;color:var(--ink);font:inherit}
+.lvpath{flex-direction:column;align-items:stretch;gap:8px;text-align:left}
 .rule{display:flex;align-items:flex-start;gap:12px;padding:12px 0}
 .rule + .rule{border-top:1px solid var(--line)}
 .switch{flex:none;width:48px;height:28px;border-radius:14px;border:0;background:var(--line);position:relative;cursor:pointer;transition:background .15s}
@@ -1037,7 +1054,7 @@ function gain(n, label){
 /* ---------- deploy config ----------
    claude.ai 밖에서 배포할 때 config.js의 SITUWAY_CONFIG로 값을 넣어요.
    GOOGLE_CLIENT_ID: Google Cloud 콘솔의 OAuth 웹 클라이언트 ID (비워 두면 .ics 파일 불러오기만 써요) */
-const CONFIG = Object.assign({GOOGLE_CLIENT_ID:""}, window.SITUWAY_CONFIG || {});
+const CONFIG = Object.assign({GOOGLE_CLIENT_ID:"", ODSAY_KEY:""}, window.SITUWAY_CONFIG || {});
 let SAMPLE = null, TTS = null, DICT = null, micTarget = null, micOn = false;
 function aiPill(){ const p = $("#aiPill"); if (!p) return; p.textContent = SAMPLE ? "AI 연결됨" : "시연 모드"; p.classList.toggle("on", !!SAMPLE); p.title = SAMPLE ? "Claude가 피드백과 대화를 만들어요" : "AI 없이 규칙 기반으로 동작해요"; }
 (function initCaps(){
@@ -1348,6 +1365,187 @@ function recommendations(){
 }
 
 /* ---------- render ---------- */
+/* ---------- 실시간 승하차 알림: ODsay 경로 + GPS ---------- */
+const ODSAY = "https://api.odsay.com/v1/api/";
+const odKey = () => CONFIG.ODSAY_KEY || (() => { try { return localStorage.getItem("situway-odsay-key") || ""; } catch(e){ return ""; } })();
+let LN = null;
+const geoDist = (a, b) => { const R = 6371000, r = Math.PI / 180, dLat = (b.y - a.y) * r, dLng = (b.x - a.x) * r; const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.y * r) * Math.cos(b.y * r) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+async function odsay(api, params){
+  const q = new URLSearchParams({...params, apiKey:odKey()});
+  const r = await fetch(ODSAY + api + "?" + q.toString());
+  const j = await r.json();
+  const err = j.error && (Array.isArray(j.error) ? j.error[0] : j.error);
+  if (err) throw new Error(err.msg || err.message || "ODsay 오류");
+  return j.result;
+}
+/* demo path for when no key is set: 5호선 우장산 → 여의도 (좌표는 시연용 근사값) */
+function demoPath(){
+  const names = ["우장산","화곡","까치산","신정","목동","오목교","양평","영등포구청","영등포시장","신길","여의도"];
+  const A = {x:126.8364, y:37.5485}, B = {x:126.9243, y:37.5216};
+  const st = names.map((n, i) => ({stationName:n, x:A.x + (B.x - A.x) * i / 10, y:A.y + (B.y - A.y) * i / 10}));
+  return {demo:true, info:{totalTime:31, busTransitCount:0, subwayTransitCount:1}, subPath:[
+    {trafficType:3, sectionTime:5, distance:350, startX:A.x - .003, startY:A.y + .002, endX:A.x, endY:A.y},
+    {trafficType:1, sectionTime:22, stationCount:10, lane:[{name:"수도권 5호선"}], startName:"우장산", endName:"여의도", way:"상일동·마천 방면", passStopList:{stations:st}},
+    {trafficType:3, sectionTime:4, distance:300, startX:B.x, startY:B.y, endX:B.x + .002, endY:B.y - .001}]};
+}
+const segLabel = s => s.trafficType === 3 ? `도보 ${s.sectionTime}분` : s.trafficType === 1 ? (s.lane && s.lane[0] && s.lane[0].name || "지하철").replace("수도권 ", "") : `버스 ${(s.lane || []).map(l => l.busNo).filter(Boolean).slice(0, 2).join("·") || ""}`;
+const segIcon = s => s.trafficType === 3 ? "walk" : s.trafficType === 1 ? "subway" : "bus";
+const rideSegs = p => p.subPath.filter(s => s.trafficType !== 3);
+function openLive(){
+  if (!LN) LN = {step:"setup", from:null, to:null, results:[], paths:[], q:"", fromQ:"", fromResults:[]};
+  renderLive();
+}
+function liveSetupBody(){
+  const key = odKey();
+  return `
+    <p class="small muted">실제 대중교통 경로를 찾고, 휴대폰 위치로 탈 곳과 내릴 곳을 알려 줘요. 안내 중에는 화면을 켜 두세요.</p>
+    ${key ? "" : `<div class="card"><h3>ODsay API 키</h3><p class="xs muted">실제 경로 검색에 필요해요. 키가 없으면 시연 경로로 안내를 체험할 수 있어요.</p>
+      <div class="row" style="gap:8px"><input class="input" id="lvKey" placeholder="ODsay 웹 API 키" style="flex:1"><button class="btn" data-act="liveKey">저장</button></div></div>`}
+    <div class="card">
+      <div class="field"><label>출발</label>
+        <div class="row" style="gap:8px"><button class="toggle" data-act="liveFromHere" aria-pressed="${!LN.from}">${ic("target", 16)} 현재 위치</button>${LN.from ? `<span class="chip">${esc(LN.from.name)}</span>` : ""}</div>
+        <div class="row" style="gap:8px;margin-top:8px"><input class="input" id="lvFromQ" value="${esc(LN.fromQ)}" placeholder="또는 역·정류장 이름" style="flex:1"><button class="btn" data-act="liveFind" data-w="from" ${key ? "" : "disabled"}>검색</button></div>
+        ${LN.fromResults.length ? `<div class="list">${LN.fromResults.map((r, i) => stRow(r, i, "from")).join("")}</div>` : ""}</div>
+      <div class="field"><label>도착</label>
+        <div class="row" style="gap:8px"><input class="input" id="lvToQ" value="${esc(LN.q)}" placeholder="역·정류장 이름 (예: 여의도역)" style="flex:1"><button class="btn" data-act="liveFind" data-w="to" ${key ? "" : "disabled"}>검색</button></div>
+        ${LN.to ? `<span class="chip brand" style="margin-top:8px;align-self:flex-start">${esc(LN.to.name)}</span>` : ""}
+        ${LN.results.length ? `<div class="list">${LN.results.map((r, i) => stRow(r, i, "to")).join("")}</div>` : ""}</div>
+    </div>
+    ${LN.err ? `<p class="small" style="color:var(--danger,#E0384A)">${esc(LN.err)}</p>` : ""}`;
+}
+const stRow = (r, i, w) => `<button class="lvst" data-act="livePickSt" data-w="${w}" data-i="${i}">${ic(r.stationClass === 2 ? "subway" : "bus", 18)}<span class="stack" style="gap:0;flex:1;text-align:left"><b class="small">${esc(r.stationName)}</b><span class="xs muted">${esc(r.stationClass === 2 ? (r.laneName || "지하철") : (r.arsID ? "정류장 " + r.arsID : "버스 정류장"))}${r.do ? " · " + esc(r.do + " " + (r.gu || "")) : ""}</span></span></button>`;
+function livePathsBody(){
+  return `<p class="small muted">${esc(LN.fromName || "현재 위치")} → ${esc(LN.to ? LN.to.name : "")}</p>
+    <div class="stack" style="gap:10px">${LN.paths.map((p, i) => `<button class="lvpath" data-act="livePickPath" data-i="${i}">
+      <div class="row between"><b style="font-size:20px">${p.info.totalTime}분</b><span class="small muted">환승 ${Math.max(0, (p.info.busTransitCount || 0) + (p.info.subwayTransitCount || 0) - 1)}회</span></div>
+      <div class="row wrap" style="gap:6px">${p.subPath.filter(s => s.sectionTime > 0).map(s => `<span class="chip ${s.trafficType === 3 ? "" : "brand"}">${ic(segIcon(s), 14)} ${esc(segLabel(s))}</span>`).join("")}</div>
+      <span class="xs muted">${rideSegs(p).map(s => `${esc(s.startName)} 승차 → ${esc(s.endName)} 하차`).join(" · ")}</span></button>`).join("")}</div>`;
+}
+function liveNavBody(){
+  const p = LN.path, s = p.subPath[LN.seg], st = s.passStopList ? s.passStopList.stations : [], last = st.length - 1;
+  const g = LN.gps, fresh = g && Date.now() - g.t < 30000;
+  const gpsLine = LN.sim ? "시연 모드 · 위치를 자동으로 움직여요" : !g ? "위치 확인 중…" : fresh && g.acc < 200 ? `GPS 정확도 ±${Math.round(g.acc)}m` : "GPS 신호가 약해요 · 지나간 시간으로 위치를 추정해요";
+  const ride = s.trafficType !== 3;
+  const left = ride ? Math.max(0, last - LN.idx) : 0;
+  return `
+    <div class="lvbanner ${LN.alertKind || ""}" aria-live="assertive"><b>${esc(LN.msg || "")}</b>${LN.sub ? `<span>${esc(LN.sub)}</span>` : ""}</div>
+    <div class="row between xs muted"><span>${ic("target", 14)} ${esc(gpsLine)}</span>${p.demo ? `<span class="chip">시연 경로</span>` : ""}</div>
+    <div class="card">
+      <div class="row" style="gap:10px">${tile(segIcon(s) === "walk" ? "walk" : segIcon(s), segIcon(s), 44)}<div class="stack" style="gap:2px;flex:1"><b>${esc(segLabel(s))}</b><span class="small muted">${ride ? `${esc(s.startName)} → ${esc(s.endName)}${s.way ? " · " + esc(s.way) : ""}` : LN.seg === p.subPath.length - 1 ? "도착지까지 걷기" : `${esc(p.subPath[LN.seg + 1].startName || "")}까지 걷기`}</span></div>${ride ? `<b class="mono">${left}정거장</b>` : ""}</div>
+      ${ride ? `<ol class="lvstops">${st.map((x, i) => `<li class="${i < LN.idx ? "past" : i === LN.idx ? "now" : ""} ${i === last ? "end" : ""}">${esc(x.stationName)}${i === last ? " <em>하차</em>" : i === 0 ? " <em>승차</em>" : ""}</li>`).join("")}</ol>` : `<p class="small muted">${ic("walk", 16)} 걷는 동안에는 학습을 멈춰요. 주변을 살피며 걸어 주세요.</p>`}
+    </div>
+    <div class="row wrap" style="gap:6px">${p.subPath.filter(x => x.sectionTime > 0).map(x => { const k = p.subPath.indexOf(x); return `<span class="chip ${k === LN.seg ? "brand" : ""}" style="${k < LN.seg ? "opacity:.45" : ""}">${esc(segLabel(x))}</span>`; }).join("")}</div>`;
+}
+function renderLive(){
+  if (!LN) return;
+  let body, foot = "";
+  if (LN.step === "setup") { body = liveSetupBody(); foot = `${odKey() ? "" : `<button class="btn" data-act="liveDemo">시연 경로로 보기</button>`}<button class="btn primary" data-act="liveSearch" ${odKey() && LN.to ? "" : "disabled"}>경로 찾기</button>`; }
+  else if (LN.step === "paths") { body = livePathsBody(); foot = `<button class="btn" data-act="liveBack">다시 검색</button>`; }
+  else { body = liveNavBody(); const s = LN.path.subPath[LN.seg]; foot = `<button class="btn" data-act="liveStop">안내 종료</button>${s.trafficType !== 3 && !LN.boarded ? `<button class="btn brand" data-act="liveBoard">탔어요</button>` : ""}<button class="btn primary" data-act="liveNext">${LN.seg >= LN.path.subPath.length - 1 ? "도착" : "다음 구간"}</button>`; }
+  sheet("실시간 승하차 알림", body, foot, "live");
+  const n = $(".lvstops .now"); if (n) n.scrollIntoView({block:"nearest"});
+}
+async function liveFind(w){
+  const q = (($(w === "to" ? "#lvToQ" : "#lvFromQ") || {}).value || "").trim(); if (!q) { toast("역이나 정류장 이름을 적어 주세요."); return; }
+  if (w === "to") LN.q = q; else LN.fromQ = q;
+  LN.err = "";
+  try { const r = await odsay("searchStation", {stationName:q.replace(/역$/, ""), displayCnt:"8"}); const list = (r && r.station || []).slice(0, 8); if (w === "to") LN.results = list; else LN.fromResults = list; if (!list.length) LN.err = "검색 결과가 없어요. 이름을 조금 바꿔 보세요."; }
+  catch(e){ LN.err = "검색하지 못했어요: " + e.message; }
+  renderLive();
+}
+function hereNow(){ return new Promise((res, rej) => { if (!navigator.geolocation) return rej(new Error("이 브라우저는 위치를 지원하지 않아요")); navigator.geolocation.getCurrentPosition(p => res({x:p.coords.longitude, y:p.coords.latitude}), e => rej(new Error(e.code === 1 ? "위치 권한을 허용해 주세요" : "현재 위치를 찾지 못했어요")), {enableHighAccuracy:true, timeout:12000, maximumAge:30000}); }); }
+async function liveSearch(){
+  LN.err = ""; patchLiveFoot("경로를 찾는 중…");
+  try {
+    const from = LN.from || await hereNow(); LN.fromName = LN.from ? LN.from.name : "현재 위치";
+    const r = await odsay("searchPubTransPathT", {SX:from.x, SY:from.y, EX:LN.to.x, EY:LN.to.y, OPT:"0"});
+    LN.paths = (r && r.path || []).slice(0, 3);
+    if (!LN.paths.length) throw new Error("가는 경로가 없어요");
+    LN.step = "paths";
+  } catch(e){ LN.err = e.message; }
+  renderLive();
+}
+function patchLiveFoot(t){ const f = $("#layer .sheet-foot"); if (f) f.innerHTML = `<button class="btn primary block" disabled>${esc(t)}</button>`; }
+
+/* ---- navigation ---- */
+function liveAlert(kind, msg, sub, say){
+  LN.msg = msg; LN.sub = sub || ""; LN.alertKind = kind;
+  if (say) { speakKo(say); try { navigator.vibrate && navigator.vibrate(kind === "now" ? [400, 150, 400, 150, 400] : [250, 120, 250]); } catch(e){} }
+  if (say && document.visibilityState !== "visible" && "Notification" in window && Notification.permission === "granted") {
+    const opt = {body:sub || "", tag:"situway-live", renotify:true, icon:"icon-192.png"};
+    (navigator.serviceWorker && navigator.serviceWorker.getRegistration ? navigator.serviceWorker.getRegistration() : Promise.resolve(null)).then(r => r ? r.showNotification(msg, opt) : new Notification(msg, opt)).catch(() => {});
+  }
+}
+function fireOnce(key, ...a){ if (LN.fired[key]) return; LN.fired[key] = 1; liveAlert(...a); }
+function liveBegin(path){
+  LN.path = path; LN.step = "nav"; LN.seg = 0; LN.idx = 0; LN.boarded = false; LN.fired = {}; LN.gps = null;
+  try { navigator.wakeLock && navigator.wakeLock.request("screen").then(w => { LN.wake = w; }).catch(() => {}); } catch(e){}
+  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {});
+  segIntro();
+  if (path.demo) liveSimStart();
+  else if (navigator.geolocation) LN.watch = navigator.geolocation.watchPosition(pos => liveTick({x:pos.coords.longitude, y:pos.coords.latitude, acc:pos.coords.accuracy, t:Date.now()}), e => { if (e.code === 1) { LN.msg = "위치 권한이 꺼져 있어요"; LN.sub = "브라우저 설정에서 위치를 허용하면 승하차 알림이 동작해요."; renderLive(); } }, {enableHighAccuracy:true, maximumAge:5000, timeout:20000});
+  LN.clock = setInterval(() => liveTick(null), 5000);
+  renderLive();
+}
+function segIntro(){
+  const s = LN.path.subPath[LN.seg];
+  if (s.trafficType === 3) { const nx = LN.path.subPath[LN.seg + 1]; liveAlert("walk", nx ? `${nx.startName}까지 걸어가요` : "도착지까지 걸어가요", `약 ${s.sectionTime}분 · ${s.distance || ""}${s.distance ? "m" : ""}`.replace(/ · $/, ""), null); }
+  else liveAlert("ride", `${s.startName}에서 ${segLabel(s)} 타요`, s.way ? s.way : `${s.stationCount}정거장 뒤 ${s.endName}에서 내려요`, null);
+}
+function liveTick(g){
+  if (!LN || LN.step !== "nav") return;
+  if (g) LN.gps = g;
+  const p = LN.path, s = p.subPath[LN.seg];
+  const here = LN.gps, good = here && Date.now() - here.t < 30000 && here.acc < 200;
+  if (s.trafficType === 3) {
+    const nx = p.subPath[LN.seg + 1];
+    if (nx && good) { const st0 = nx.passStopList ? nx.passStopList.stations[0] : {x:nx.startX, y:nx.startY}; const d = geoDist(here, st0);
+      if (d < 250) fireOnce("near" + LN.seg, "board", `곧 ${nx.startName}이에요`, `${segLabel(nx)} 타는 곳 · 약 ${Math.round(d)}m`, `곧 ${nx.startName}입니다. ${segLabel(nx)} 탈 준비하세요.`);
+      if (d < 60) { LN.seg++; LN.idx = 0; LN.boarded = false; segIntro(); } }
+    if (!nx && good && geoDist(here, {x:s.endX, y:s.endY}) < 60) fireOnce("arrive", "now", "도착했어요", "안내를 마칠게요.", "목적지에 도착했습니다.");
+  } else {
+    const st = s.passStopList.stations, last = st.length - 1;
+    let idx = LN.idx;
+    if (good) { let best = idx, bd = Infinity; for (let i = idx; i <= last; i++) { const d = geoDist(here, st[i]); if (d < bd) { bd = d; best = i; } } const lim = s.trafficType === 1 ? 500 : 200; if (bd < lim) { idx = Math.max(idx, best); if (!LN.boarded && best > 0) { LN.boarded = true; LN.boardedAt = Date.now(); } } }
+    else if (LN.boarded && s.trafficType === 1 && s.sectionTime) { const per = (s.sectionTime * 60000) / Math.max(1, last); idx = Math.max(idx, Math.min(last - 1, Math.floor((Date.now() - LN.boardedAt) / per))); }
+    LN.idx = idx;
+    const left = last - idx, unit = s.trafficType === 1 ? "역" : "정류장";
+    if (left === 2) fireOnce("l2" + LN.seg, "soon", `2정거장 뒤에 내려요`, `${s.endName}에서 하차`, `두 정거장 뒤 ${s.endName}에서 내립니다.`);
+    if (left === 1) fireOnce("l1" + LN.seg, "soon", `다음 ${unit}에서 내려요`, `${s.endName} · 내릴 준비하세요`, `다음 ${unit}은 ${s.endName}입니다. 내릴 준비하세요.`);
+    if (left === 0) {
+      LN.idx = last; fireOnce("now" + LN.seg, "now", "지금 내리세요", s.endName, `${s.endName}입니다. 지금 내리세요.`);
+      if (!LN.leaveAt) LN.leaveAt = Date.now() + (LN.sim ? 2500 : 15000);
+    }
+    if (LN.leaveAt && Date.now() >= LN.leaveAt) { LN.leaveAt = 0; liveAdvance(); return; }
+  }
+  if (!liveSkipRender()) renderLive();
+}
+const liveSkipRender = () => !$("#layer .sheet[data-cls=live]");
+function liveAdvance(){
+  if (LN.seg >= LN.path.subPath.length - 1) { liveAlert("now", "도착했어요", "안내를 마칠게요.", "목적지에 도착했습니다."); liveStop(false); return; }
+  LN.seg++; LN.idx = 0; LN.boarded = false; LN.leaveAt = 0; segIntro(); if (LN.sim) LN.simT = 0; renderLive();
+}
+/* simulation: moves a fake position along the path so the alerts can be shown indoors */
+function liveSimStart(){
+  LN.sim = true; LN.simT = 0;
+  LN.simTimer = setInterval(() => {
+    if (!LN) return; const s = LN.path.subPath[LN.seg]; LN.simT++;
+    let pos;
+    if (s.trafficType === 3) { const nx = LN.path.subPath[LN.seg + 1]; const a = {x:s.startX, y:s.startY}, b = nx ? (nx.passStopList ? nx.passStopList.stations[0] : {x:nx.startX, y:nx.startY}) : {x:s.endX, y:s.endY}; const f = Math.min(1, LN.simT / 4); pos = {x:a.x + (b.x - a.x) * f, y:a.y + (b.y - a.y) * f}; if (!nx && f >= 1) { liveAdvance(); return; } }
+    else { const st = s.passStopList.stations; const i = Math.min(st.length - 1, Math.floor(LN.simT / 2)); pos = st[i]; if (i > 0) { LN.boarded = true; LN.boardedAt = LN.boardedAt || Date.now(); } }
+    liveTick({...pos, acc:15, t:Date.now()});
+  }, 1500);
+}
+function liveStop(quiet){
+  if (!LN) return;
+  if (LN.watch != null) try { navigator.geolocation.clearWatch(LN.watch); } catch(e){}
+  clearInterval(LN.clock); clearInterval(LN.simTimer);
+  try { LN.wake && LN.wake.release(); } catch(e){}
+  const keep = {from:LN.from, to:LN.to, q:LN.q, fromQ:LN.fromQ};
+  LN = null;
+  if (!quiet) { LN = {step:"setup", results:[], paths:[], fromResults:[], ...keep}; renderLive(); }
+}
+
 const TABS = [["today","오늘","home"],["calendar","일정","cal"],["tasks","학습","task"],["exprs","내 표현","book"],["goals","목표","target"]];
 function render(){
   const tabs = $("#tabs");
@@ -1459,6 +1657,7 @@ function vToday(){
     </div>
   </div>
   ${S.resume ? `<button class="rec" data-act="resume">${tile("practice", "play", 56)}<span class="stack" style="gap:2px;flex:1;text-align:left"><span class="muted">이어서 하기</span><b class="evtitle">${esc(S.resume.label)}</b></span>${ic("chev", 22)}</button>` : ""}
+  <button class="rec livecard" data-act="liveOpen">${tile("bus", "bus", 56)}<span class="stack" style="gap:2px;flex:1;text-align:left"><b class="evtitle">실시간 승하차 알림</b><span class="muted">실제 경로를 찾고 GPS로 탈 곳·내릴 곳을 알려 줘요</span></span>${ic("chev", 22)}</button>
   <div class="sec-title"><h2>오늘의 추천</h2><span class="muted small">내 일정에 맞춰 골랐어요</span></div>
   <div class="stack" style="gap:10px">${recs.map(recBtn).join("")}</div>
   <div class="card">
@@ -1649,6 +1848,7 @@ function sheet(title, body, foot = "", cls = ""){
 }
 let LASTCV = null;
 function closeSheet(){
+  if (LN) liveStop(true);
   if (U && U.await) { stopSpeak(); CV = null; const k = U.await; U.await = null; if ((k === "email" && S.done["unit-" + U.id]) || (k === "convo" && LASTCV === U.u.convo)) U.tasks[k] = true; saveUnitProg(); renderUnit(); return; }
   if (U) { U.playing = false; clearInterval(ytTimer); U = null; }
   CMOPEN = false; SR = null; if (P && P.timer) clearInterval(P.timer); stopSpeak(); if (micOn && DICT) DICT.stop().catch(()=>{}); P = null; CV = null; $("#layer").innerHTML = ""; render(); }
@@ -2694,6 +2894,18 @@ const A = {
   mic: t => micClick(t.dataset.target),
   reflect: () => doReflect(),
   saveReflect: () => { if (!RF) return; S.stats.reflect++; Q().reflect = 1; addExpr(RF.en, RF.ko, "성찰 · " + (focusEvent() ? focusEvent().title : "오늘") + "에서 막힌 말", true); RF = null; closeSheet(); toast("저장했어요. 내일 출근길 카드에 나와요."); gain(15, "막힌 말 기록"); },
+  liveOpen: () => openLive(),
+  liveKey: () => { const v = ($("#lvKey").value || "").trim(); if (!v) return; try { localStorage.setItem("situway-odsay-key", v); } catch(e){} toast("키를 저장했어요."); renderLive(); },
+  liveFromHere: () => { LN.from = null; LN.fromResults = []; renderLive(); },
+  liveFind: t => liveFind(t.dataset.w),
+  livePickSt: t => { const w = t.dataset.w, r = (w === "to" ? LN.results : LN.fromResults)[+t.dataset.i]; const v = {name:r.stationName + (r.stationClass === 2 ? "역" : ""), x:+r.x, y:+r.y}; if (w === "to") { LN.to = v; LN.results = []; } else { LN.from = v; LN.fromResults = []; } renderLive(); },
+  liveSearch: () => liveSearch(),
+  liveBack: () => { LN.step = "setup"; renderLive(); },
+  livePickPath: t => liveBegin(LN.paths[+t.dataset.i]),
+  liveDemo: () => { LN.fromName = "우장산역 근처"; LN.to = {name:"여의도역"}; liveBegin(demoPath()); },
+  liveBoard: () => { LN.boarded = true; LN.boardedAt = Date.now(); toast("탑승으로 표시했어요. 지하에서는 시간으로 위치를 추정해요."); renderLive(); },
+  liveNext: () => liveAdvance(),
+  liveStop: () => liveStop(false),
   localDone: t => { const first = !S.done[t.dataset.k]; S.done[t.dataset.k] = 1; save(); closeSheet(); if (first) gain(10, "현지 표현"); render(); },
   rule: t => { const k = t.dataset.r; S.rules[k] = !S.rules[k]; save(); render(); },
   runTask: t => { const r = recommendations().find(x => x.k === t.dataset.k); if (!r) return;
