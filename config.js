@@ -3,5 +3,5 @@
    비워 두면 .ics 파일 불러오기로만 일정을 넣을 수 있어요. 설정 방법은 README.md 참고. */
 window.SITUWAY_CONFIG = {
   GOOGLE_CLIENT_ID: "",
-  ODSAY_KEY: ""
+  ODSAY_KEY: "gHLKIH+xSvdRcjLXW5UFXXKnChJoyQZB1E9sSfqwEPo"
 };
