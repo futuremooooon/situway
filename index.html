@@ -287,6 +287,44 @@ textarea.input{resize:vertical;min-height:120px;line-height:1.55}
 .lvstops li.now::before{background:var(--brand);border-color:var(--brand)}
 .lvstops li.end{color:var(--ink)}
 .lvstops em{font-style:normal;font-size:12px;color:var(--brand-text);margin-left:4px}
+.segctl{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--surface-2)}
+.segctl button{border:0;background:transparent;padding:8px 0;border-radius:9px;font:inherit;font-size:15px;font-weight:600;color:var(--muted);cursor:pointer}
+.segctl button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.calnav{display:flex;align-items:center;gap:6px}
+.calnav b{flex:1;text-align:center;font-size:17px}
+.calnav .iconbtn:first-child svg{transform:rotate(180deg)}
+.iconbtn{border:0;background:var(--surface);width:36px;height:36px;border-radius:10px;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.tg{padding:10px 8px;overflow:hidden}
+.tg-head,.tg-allday,.tg-body{display:grid;gap:2px}
+.tg-head{margin-bottom:6px}
+.tg-day{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;border-radius:10px;cursor:pointer;color:var(--ink);font:inherit}
+.tg-day small{font-size:11px;color:var(--muted)}
+.tg-day b{font-size:15px}
+.tg-day.today b{background:var(--brand);color:#fff;border-radius:50%;width:26px;height:26px;display:grid;place-items:center}
+.tg-allday{padding:4px 0;border-bottom:1px solid var(--line);margin-bottom:4px;align-items:start}
+.tg-lab,.tg-hours span{font-size:11px;color:var(--muted);text-align:right;padding-right:6px}
+.tg-hours span{display:block;transform:translateY(-6px)}
+.tg-chip{display:block;width:100%;border:0;border-left:3px solid;border-radius:5px;padding:2px 4px;font:inherit;font-size:11px;font-weight:600;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;margin-bottom:2px}
+.tg-col{position:relative;border-left:1px solid var(--line);background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--h,40px) - 1px),var(--line) calc(var(--h,40px) - 1px),var(--line) var(--h,40px))}
+.tg-col.today{background-color:rgba(49,130,246,.04)}
+.tg-ev{position:absolute;left:1px;right:2px;border:0;border-left:3px solid;border-radius:6px;padding:3px 5px;text-align:left;font:inherit;font-size:11px;line-height:1.25;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+.tg-ev b{font-weight:700;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tg-ev span{font-size:11px;opacity:.85}
+.tg-now{position:absolute;left:0;right:0;height:2px;background:#F04452;z-index:2}
+.tg-now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:#F04452}
+.mg{padding:10px 6px}
+.mg-dow,.mg-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mg-dow span{text-align:center;font-size:12px;color:var(--muted);padding-bottom:6px}
+.mg-cell{border:0;background:transparent;min-height:64px;border-radius:8px;padding:3px 2px;display:flex;flex-direction:column;gap:2px;align-items:stretch;cursor:pointer;font:inherit;color:var(--ink);min-width:0}
+.mg-cell.other{opacity:.35}
+.mg-cell.sel{background:var(--brand-soft)}
+.mg-n{font-size:13px;font-weight:600;text-align:center;line-height:22px}
+.mg-cell.today .mg-n{background:var(--brand);color:#fff;border-radius:50%;width:22px;align-self:center}
+.mg-ev{font-size:10px;font-weight:600;border-radius:4px;padding:1px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.mg-more{font-size:10px;color:var(--muted);text-align:center}
+.mg-item{border:0;background:transparent;width:100%;font:inherit;color:var(--ink);cursor:pointer;padding:0}
+.cal-legend{gap:10px;font-size:12px;color:var(--muted)}
+.cal-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
 .thumb{position:relative;flex:none;display:block;border-radius:16px;box-shadow:0 4px 12px rgba(30,60,140,.14)}
 .thumb svg{display:block}
 .thumb em{position:absolute;right:4px;bottom:4px;font-style:normal;font-size:11px;font-weight:700;line-height:1;padding:3px 5px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff}
@@ -1072,7 +1110,7 @@ function gain(n, label){
 /* ---------- deploy config ----------
    claude.ai 밖에서 배포할 때 config.js의 SITUWAY_CONFIG로 값을 넣어요.
    GOOGLE_CLIENT_ID: Google Cloud 콘솔의 OAuth 웹 클라이언트 ID (비워 두면 .ics 파일 불러오기만 써요) */
-const CONFIG = Object.assign({GOOGLE_CLIENT_ID:"", ODSAY_KEY:""}, window.SITUWAY_CONFIG || {});
+const CONFIG = Object.assign({GOOGLE_CLIENT_ID:"", ODSAY_KEY:"", LIVE_REAL:false}, window.SITUWAY_CONFIG || {});
 let SAMPLE = null, TTS = null, DICT = null, micTarget = null, micOn = false;
 function aiPill(){ const p = $("#aiPill"); if (!p) return; p.textContent = SAMPLE ? "AI 연결됨" : "시연 모드"; p.classList.toggle("on", !!SAMPLE); p.title = SAMPLE ? "Claude가 피드백과 대화를 만들어요" : "AI 없이 규칙 기반으로 동작해요"; }
 (function initCaps(){
@@ -1425,6 +1463,21 @@ function demoPath(){
     {trafficType:1, sectionTime:22, stationCount:10, lane:[{name:"수도권 5호선"}], startName:"우장산", endName:"여의도", way:"상일동·마천 방면", passStopList:{stations:st}},
     {trafficType:3, sectionTime:4, distance:300, startX:B.x, startY:B.y, endX:B.x + .002, endY:B.y - .001}]};
 }
+function demoPathBus(){
+  const P = (n, x, y) => ({stationName:n, x, y});
+  const bus = [P("우장산역1번출구",126.8371,37.5491),P("화곡본동시장",126.8418,37.5512),P("강서구청",126.8497,37.5509),P("등촌7단지",126.8556,37.5543)];
+  const sub = [P("가양",126.8541,37.5613),P("증미",126.8608,37.5580),P("등촌",126.8737,37.5506),P("염창",126.8746,37.5470),P("신목동",126.8826,37.5440),P("선유도",126.8936,37.5378),P("당산",126.9022,37.5341),P("국회의사당",126.9178,37.5282),P("여의도",126.9243,37.5216)];
+  return {demo:true, info:{totalTime:36, busTransitCount:1, subwayTransitCount:1}, subPath:[
+    {trafficType:3, sectionTime:2, distance:120, startX:126.8360, startY:37.5480, endX:bus[0].x, endY:bus[0].y},
+    {trafficType:2, sectionTime:9, stationCount:3, lane:[{busNo:"강서05"}], startName:bus[0].stationName, endName:bus[3].stationName, passStopList:{stations:bus}},
+    {trafficType:3, sectionTime:4, distance:300, startX:bus[3].x, startY:bus[3].y, endX:sub[0].x, endY:sub[0].y},
+    {trafficType:1, sectionTime:19, stationCount:8, lane:[{name:"수도권 9호선"}], startName:"가양", endName:"여의도", way:"중앙보훈병원 방면", passStopList:{stations:sub}},
+    {trafficType:3, sectionTime:2, distance:150, startX:sub[8].x, startY:sub[8].y, endX:126.9258, endY:37.5208}]};
+}
+const DEMO_ROUTES = [
+  {id:"sub", title:"우장산역 → 여의도역", desc:"5호선 한 번에 · 약 31분 · 10정거장", make:() => demoPath()},
+  {id:"bus", title:"우장산역 → 여의도역 (버스 환승)", desc:"강서05 버스 → 9호선 · 약 36분 · 환승 1회", make:() => demoPathBus()}
+];
 const segLabel = s => s.trafficType === 3 ? `도보 ${s.sectionTime}분` : s.trafficType === 1 ? (s.lane && s.lane[0] && s.lane[0].name || "지하철").replace("수도권 ", "") : `버스 ${(s.lane || []).map(l => l.busNo).filter(Boolean).slice(0, 2).join("·") || ""}`;
 const segIcon = s => s.trafficType === 3 ? "walk" : s.trafficType === 1 ? "subway" : "bus";
 const rideSegs = p => p.subPath.filter(s => s.trafficType !== 3);
@@ -1433,6 +1486,10 @@ function openLive(){
   renderLive();
 }
 function liveSetupBody(){
+  if (!CONFIG.LIVE_REAL) return `
+    <div class="odusage"><p class="small" style="margin:0"><b>지금은 예시 경로로만 체험할 수 있어요.</b></p><p class="xs muted" style="margin:4px 0 0">실제 경로 검색은 무료 호출 한도(하루 30회) 때문에 잠가 두었어요. 예시 경로에서는 위치가 자동으로 움직이며 탑승·2정거장 전·하차 알림이 실제와 똑같이 나와요.</p></div>
+    <div class="stack" style="gap:10px">${DEMO_ROUTES.map(r => `<button class="lvpath" data-act="liveDemoRoute" data-id="${r.id}"><div class="row between"><b>${esc(r.title)}</b>${ic("chev", 18)}</div><span class="xs muted">${esc(r.desc)}</span><div class="row wrap" style="gap:6px">${r.make().subPath.filter(s => s.sectionTime > 0).map(s => `<span class="chip ${s.trafficType === 3 ? "" : "brand"}">${ic(segIcon(s), 14)} ${esc(segLabel(s))}</span>`).join("")}</div></button>`).join("")}</div>
+    <p class="xs muted">시연 중에는 음성 안내가 나와요. 소리를 켜 주세요. 좌표는 시연용 근사값이에요.</p>`;
   const key = odKey();
   return `
     <p class="small muted">실제 대중교통 경로를 찾고, 휴대폰 위치로 탈 곳과 내릴 곳을 알려 줘요. 안내 중에는 화면을 켜 두세요.</p>
@@ -1477,7 +1534,8 @@ function liveNavBody(){
 function renderLive(){
   if (!LN) return;
   let body, foot = "";
-  if (LN.step === "setup") { body = liveSetupBody(); foot = `${odKey() ? "" : `<button class="btn" data-act="liveDemo">시연 경로로 보기</button>`}<button class="btn primary" data-act="liveSearch" ${odKey() && LN.to ? "" : "disabled"}>경로 찾기${odKey() ? ` (남은 ${odLeft()}회)` : ""}</button>`; }
+  if (LN.step === "setup" && !CONFIG.LIVE_REAL) { body = liveSetupBody(); foot = ""; }
+  else if (LN.step === "setup") { body = liveSetupBody(); foot = `${odKey() ? "" : `<button class="btn" data-act="liveDemo">시연 경로로 보기</button>`}<button class="btn primary" data-act="liveSearch" ${odKey() && LN.to ? "" : "disabled"}>경로 찾기${odKey() ? ` (남은 ${odLeft()}회)` : ""}</button>`; }
   else if (LN.step === "paths") { body = livePathsBody(); foot = `<button class="btn" data-act="liveBack">다시 검색</button>`; }
   else { body = liveNavBody(); const s = LN.path.subPath[LN.seg]; foot = `<button class="btn" data-act="liveStop">안내 종료</button>${s.trafficType !== 3 && !LN.boarded ? `<button class="btn brand" data-act="liveBoard">탔어요</button>` : ""}<button class="btn primary" data-act="liveNext">${LN.seg >= LN.path.subPath.length - 1 ? "도착" : "다음 구간"}</button>`; }
   sheet("실시간 승하차 알림", body, foot, "live");
@@ -1695,7 +1753,7 @@ function vToday(){
     </div>
   </div>
   ${S.resume ? `<button class="rec" data-act="resume">${thumb("video", "이어서")}<span class="stack" style="gap:2px;flex:1;text-align:left"><span class="muted">이어서 하기</span><b class="evtitle">${esc(S.resume.label)}</b></span>${ic("chev", 22)}</button>` : ""}
-  <button class="rec livecard" data-act="liveOpen">${thumb("bus", "GPS")}<span class="stack" style="gap:2px;flex:1;text-align:left"><b class="evtitle">실시간 승하차 알림</b><span class="muted">실제 경로를 찾고 GPS로 탈 곳·내릴 곳을 알려 줘요</span></span>${ic("chev", 22)}</button>
+  <button class="rec livecard" data-act="liveOpen">${thumb("bus", CONFIG.LIVE_REAL ? "GPS" : "체험")}<span class="stack" style="gap:2px;flex:1;text-align:left"><b class="evtitle">실시간 승하차 알림</b><span class="muted">${CONFIG.LIVE_REAL ? "실제 경로를 찾고 GPS로 탈 곳·내릴 곳을 알려 줘요" : "예시 경로로 탈 곳·내릴 곳 알림을 체험해요"}</span></span>${ic("chev", 22)}</button>
   <div class="sec-title"><h2>오늘의 추천</h2><span class="muted small">내 일정에 맞춰 골랐어요</span></div>
   <div class="stack" style="gap:10px">${recs.map(recBtn).join("")}</div>
   <div class="card">
@@ -1744,6 +1802,69 @@ function openSearch(which){
 function goalPct(g){ return Math.round(g.subs.reduce((a, s) => a + s.s, 0) / (g.subs.length * 2) * 100); }
 function goalMini(g){ const ev = evById(g.eventId); return `<div class="stack" style="gap:6px"><div class="row between"><b class="small">${esc(g.title)}</b>${ev ? `<span class="chip accent mono">${dLabel(ev.start)}</span>` : ""}</div><div class="progress"><span style="width:${goalPct(g)}%"></span></div><p class="xs muted">세부 목표 ${g.subs.filter(s => s.s === 2).length}/${g.subs.length}개 실제로 해냄 · ${g.subs.filter(s => s.s === 1).length}개 연습함</p></div>`; }
 
+/* ---------- calendar views: 목록 / 일 / 주 / 월 ---------- */
+const CAL = {view:"list", cur:null};
+const KCOL = {"en-meeting":["#E8F1FF","#1B64DA"], "en-call":["#E3F7EE","#0B8A5C"], trip:["#FFF0E3","#D9620B"], travel:["#F1EBFF","#6B4FD8"], work:["#EEF1F4","#4E5968"], call:["#FFF5D6","#B07A00"]};
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const sameDay = (a, b) => sod(a).getTime() === sod(b).getTime();
+const weekStart = d => { const x = sod(d); const w = (x.getDay() + 6) % 7; return addDays(x, -w); };
+function eventsOn(day){
+  const d0 = sod(day), d1 = addDays(d0, 1);
+  const out = S.events.filter(e => { const s = new Date(e.start), en = evEnd(e); return e.allDay ? (s < d1 && en > d0) : sameDay(s, d0); })
+    .map(e => ({...e, kc:e.kind}));
+  if (S.phone.days.includes(DOW[d0.getDay()]) && d1 > new Date()) { const p = planCall(d0); if (!(p.time || p.base) || (p.time || p.base) > addDays(new Date(), -1)) out.push({id:"call-" + d0.getTime(), block:true, plan:p, title:p.skip ? "전화영어 쉼" : `AI 전화영어 ${S.phone.len}분`, start:(p.skip ? p.base : p.time).toISOString(), end:addMin(p.skip ? p.base : p.time, S.phone.len).toISOString(), kc:"call", allDay:false}); }
+  return out.sort((a, b) => (b.allDay - a.allDay) || new Date(a.start) - new Date(b.start));
+}
+function calNav(){
+  const c = CAL.cur;
+  const title = CAL.view === "day" ? `${c.getMonth() + 1}월 ${c.getDate()}일 (${DOW[c.getDay()]})` : CAL.view === "week" ? (() => { const a = weekStart(c), b = addDays(a, 6); return `${a.getMonth() + 1}월 ${a.getDate()}일 – ${a.getMonth() === b.getMonth() ? "" : (b.getMonth() + 1) + "월 "}${b.getDate()}일`; })() : `${c.getFullYear()}년 ${c.getMonth() + 1}월`;
+  return `<div class="calnav"><button class="iconbtn" data-act="calStep" data-d="-1" aria-label="이전">${ic("chev", 20)}</button><b>${title}</b><button class="iconbtn" data-act="calStep" data-d="1" aria-label="다음">${ic("chev", 20)}</button><button class="btn sm" data-act="calToday">오늘</button></div>`;
+}
+const evBlock = (e, cls) => { const [bg, fg] = KCOL[e.kc] || KCOL.work; return `<button class="${cls}" data-act="calEv" data-id="${esc(e.id)}" style="background:${bg};color:${fg};border-left-color:${fg}">${e.block ? ic("phone", 12) + " " : ""}${esc(e.title)}</button>`; };
+/* time grid shared by day & week */
+function timeGrid(days){
+  const H0 = 7, H1 = 23, PX = days.length === 1 ? 52 : 40;
+  const now = new Date();
+  const allDayRow = days.some(d => eventsOn(d).some(e => e.allDay)) ? `<div class="tg-allday" style="grid-template-columns:40px repeat(${days.length},1fr)"><span class="tg-lab">종일</span>${days.map(d => `<div>${eventsOn(d).filter(e => e.allDay).map(e => evBlock(e, "tg-chip")).join("")}</div>`).join("")}</div>` : "";
+  const cols = days.map(d => {
+    const evs = eventsOn(d).filter(e => !e.allDay);
+    const blocks = evs.map(e => { const s = new Date(e.start), en = evEnd(e); const top = Math.max(0, (s.getHours() + s.getMinutes() / 60 - H0) * PX), h = Math.max(days.length === 1 ? 24 : 18, (en - s) / 3600000 * PX - 2); const [bg, fg] = KCOL[e.kc] || KCOL.work;
+      return `<button class="tg-ev" data-act="calEv" data-id="${esc(e.id)}" style="top:${top}px;height:${h}px;background:${bg};color:${fg};border-left-color:${fg}"><b>${esc(e.title)}</b>${days.length === 1 ? `<span>${fmtTime(s)}${e.end || e.block ? "–" + fmtTime(en) : ""}${e.plan && e.plan.moved ? " · 규칙으로 옮김" : ""}</span>` : ""}</button>`; }).join("");
+    const nowLine = sameDay(d, now) && now.getHours() >= H0 && now.getHours() < H1 ? `<i class="tg-now" style="top:${(now.getHours() + now.getMinutes() / 60 - H0) * PX}px"></i>` : "";
+    return `<div class="tg-col ${sameDay(d, now) ? "today" : ""}" style="height:${(H1 - H0) * PX}px;--h:${PX}px">${blocks}${nowLine}</div>`;
+  }).join("");
+  const head = days.length > 1 ? `<div class="tg-head" style="grid-template-columns:40px repeat(${days.length},1fr)"><span></span>${days.map(d => `<button class="tg-day ${sameDay(d, now) ? "today" : ""}" data-act="calGo" data-t="${d.getTime()}" data-v="day"><small>${DOW[d.getDay()]}</small><b>${d.getDate()}</b></button>`).join("")}</div>` : "";
+  const hours = Array.from({length:H1 - H0}, (_, i) => `<span style="height:${PX}px">${H0 + i}시</span>`).join("");
+  return `<div class="card tg">${head}${allDayRow}<div class="tg-body" style="grid-template-columns:40px repeat(${days.length},1fr)"><div class="tg-hours">${hours}</div>${cols}</div></div>`;
+}
+function monthGrid(){
+  const c = CAL.cur, first = new Date(c.getFullYear(), c.getMonth(), 1), start = weekStart(first), now = new Date();
+  const sel = CAL.sel ? new Date(CAL.sel) : (c.getMonth() === now.getMonth() && c.getFullYear() === now.getFullYear() ? sod(now) : first);
+  const cells = Array.from({length:42}, (_, i) => addDays(start, i));
+  const rows = cells[35].getMonth() !== c.getMonth() ? 35 : 42;
+  const grid = cells.slice(0, rows).map(d => { const evs = eventsOn(d); const other = d.getMonth() !== c.getMonth();
+    return `<button class="mg-cell ${other ? "other" : ""} ${sameDay(d, now) ? "today" : ""} ${sameDay(d, sel) ? "sel" : ""}" data-act="calPick" data-t="${d.getTime()}"><span class="mg-n">${d.getDate()}</span>${evs.slice(0, 2).map(e => { const [bg, fg] = KCOL[e.kc] || KCOL.work; return `<span class="mg-ev" style="background:${bg};color:${fg}">${esc(e.block ? "전화" : e.title)}</span>`; }).join("")}${evs.length > 2 ? `<span class="mg-more">+${evs.length - 2}</span>` : ""}</button>`; }).join("");
+  const dayEvs = eventsOn(sel);
+  return `<div class="card mg"><div class="mg-dow">${["월","화","수","목","금","토","일"].map(x => `<span>${x}</span>`).join("")}</div><div class="mg-grid">${grid}</div></div>
+    <div class="dayhead">${fmtDay(sel)} · ${relDay(sel)}</div>
+    <div class="card"><div class="list">${dayEvs.length ? dayEvs.map(e => `<button class="ev mg-item" data-act="calEv" data-id="${esc(e.id)}"><div class="time">${e.allDay ? "종일" : fmtTime(e.start)}</div><div class="stack" style="gap:2px;text-align:left"><b class="small">${esc(e.title)}</b><span class="xs muted">${e.block ? (e.plan.reason ? esc(e.plan.reason) : "SituWay 학습 캘린더") : KIND[e.kind].label}</span></div></button>`).join("") : `<p class="small muted" style="margin:0">일정이 없어요.</p>`}</div></div>`;
+}
+function calLegend(){ return `<div class="row wrap cal-legend">${[["en-meeting","영어 회의·통화"],["trip","출장"],["travel","연차·여행"],["work","국내 업무"],["call","연습 전화"]].map(([k, l]) => `<span><i style="background:${KCOL[k][1]}"></i>${l}</span>`).join("")}</div>`; }
+function calViewBody(){
+  if (!CAL.cur) CAL.cur = sod(new Date());
+  if (CAL.view === "day") return calNav() + timeGrid([CAL.cur]) + calLegend();
+  if (CAL.view === "week") { const a = weekStart(CAL.cur); return calNav() + timeGrid(Array.from({length:7}, (_, i) => addDays(a, i))) + calLegend(); }
+  return calNav() + monthGrid() + calLegend();
+}
+function openCalEv(id){
+  let e = S.events.find(x => x.id === id);
+  if (!e && id.startsWith("call-")) { const d = new Date(+id.slice(5)); const p = planCall(d); return sheet("연습 전화", `<div class="card"><b>${p.skip ? "이날은 쉬어요" : fmtDay(d) + " " + fmtTime(p.time)}</b><p class="small muted">${p.moved ? `원래 ${fmtTime(p.base)} → ${fmtTime(p.time)} · ` : ""}${esc(p.reason || "겹치는 일정이 없어 정한 시간에 와요.")}</p></div>`, `<button class="btn block" data-act="calRules">캘린더 규칙 보기</button>`); }
+  if (!e) return;
+  const K = KIND[e.kind];
+  sheet(esc(e.title), `<div class="card"><div class="row" style="gap:8px"><span class="chip ${K.chip}">${K.label}</span><span class="small muted">${e.allDay ? fmtDay(e.start) + " 종일" : fmtDay(e.start) + " " + fmtTime(e.start) + (e.end ? "–" + fmtTime(e.end) : "")}</span></div>
+    ${K.pack ? `<div class="row wrap" style="gap:6px;margin-top:12px"><button class="toggle" data-act="calEvTarget" data-id="${e.id}" aria-pressed="${!!e.target}">${e.target ? "학습 대상" : "학습 안 함"}</button>${e.target ? `<button class="btn sm" data-act="pack" data-ev="${e.id}">상황 팩</button><button class="btn sm ghost" data-act="goalFromEvent" data-id="${e.id}">목표로</button>` : ""}</div>` : `<p class="small muted" style="margin:12px 0 0">국내 업무 일정은 학습 추천에 쓰지 않고, 연습 전화 시간을 정할 때만 참고해요.</p>`}</div>`);
+}
+
 function vCalendar(){
   const evs = [...S.events].sort((a, b) => new Date(a.start) - new Date(b.start)).filter(e => ddays(e.start) >= -1);
   const days = {};
@@ -1755,8 +1876,9 @@ function vCalendar(){
   const keys = Object.keys(days).sort();
   return `
   <div class="row between"><h1>일정</h1><button class="btn sm brand" data-act="addEvent">${ic("plus", 20)} 일정 추가</button></div>
-  ${gcalCard()}
-  ${rulesCard()}
+  <div class="segctl" role="tablist">${[["list","목록"],["day","일"],["week","주"],["month","월"]].map(([v, l]) => `<button role="tab" aria-selected="${CAL.view === v}" data-act="calView" data-v="${v}">${l}</button>`).join("")}</div>
+  ${CAL.view !== "list" ? calViewBody() + gcalCard() + `<div id="calRules">${rulesCard()}</div>` : `${gcalCard()}
+  <div id="calRules">${rulesCard()}</div>`}${CAL.view !== "list" ? "" : `
   ${S.events.some(e => e.demo) ? `<p class="muted small">지금 보이는 일정은 시연 데이터예요. Google 캘린더에서 가져오면 실제 일정으로 바뀌어요.</p>` : ""}
   ${keys.map(k => `<div class="dayhead">${fmtDay(k)} · ${relDay(k)}</div><div class="card"><div class="list">${days[k].sort((a, b) => new Date(a.start) - new Date(b.start)).map(e => e.block ? `
     <div class="ev"><div class="time">${e.plan.skip ? "–" : fmtTime(e.start)}</div><div class="stack" style="gap:2px"><span class="small" style="color:${e.plan.skip ? "var(--muted)" : "var(--accent-ink)"};font-weight:600">${ic("phone", 18)} ${esc(e.title)}</span><span class="xs muted">${e.plan.moved ? `${fmtTime(e.plan.base)} → ${fmtTime(e.plan.time)} · ${esc(e.plan.reason)}` : e.plan.skip ? esc(e.plan.reason) : "SituWay 학습 캘린더"}</span></div></div>` : `
@@ -1768,7 +1890,7 @@ function vCalendar(){
         ${e.target ? `<button class="btn sm ghost" data-act="goalFromEvent" data-id="${e.id}">목표로</button>` : ""}
       </div>
       ${!e.confirmed && KIND[e.kind].pack ? `<div class="note">이 일정, ${e.kind === "travel" ? "여행 준비 과제를 받을까요?" : "영어로 진행하나요?"} <button class="btn sm" data-act="confirmKind" data-id="${e.id}" data-v="1">맞아요</button> <button class="btn sm ghost" data-act="confirmKind" data-id="${e.id}" data-v="0">아니에요</button></div>` : ""}
-    </div></div>`).join("")}</div></div>`).join("")}
+    </div></div>`).join("")}</div></div>`).join("")}`}
   `;
 }
 
@@ -2941,11 +3063,20 @@ const A = {
   liveSearch: () => liveSearch(),
   liveBack: () => { LN.step = "setup"; renderLive(); },
   livePickPath: t => liveBegin(LN.paths[+t.dataset.i]),
+  liveDemoRoute: t => { const r = DEMO_ROUTES.find(x => x.id === t.dataset.id); LN.fromName = "우장산역 근처"; LN.to = {name:"여의도역"}; liveBegin(r.make()); },
   liveDemo: () => { LN.fromName = "우장산역 근처"; LN.to = {name:"여의도역"}; liveBegin(demoPath()); },
   liveBoard: () => { LN.boarded = true; LN.boardedAt = Date.now(); toast("탑승으로 표시했어요. 지하에서는 시간으로 위치를 추정해요."); renderLive(); },
   liveNext: () => liveAdvance(),
   liveStop: () => liveStop(false),
   localDone: t => { const first = !S.done[t.dataset.k]; S.done[t.dataset.k] = 1; save(); closeSheet(); if (first) gain(10, "현지 표현"); render(); },
+  calView: t => { CAL.view = t.dataset.v; CAL.sel = null; render(); },
+  calStep: t => { const d = +t.dataset.d, c = CAL.cur; CAL.cur = CAL.view === "day" ? addDays(c, d) : CAL.view === "week" ? addDays(c, 7 * d) : new Date(c.getFullYear(), c.getMonth() + d, 1); CAL.sel = null; render(); },
+  calToday: () => { CAL.cur = sod(new Date()); CAL.sel = null; render(); },
+  calGo: t => { CAL.cur = new Date(+t.dataset.t); CAL.view = t.dataset.v; render(); },
+  calPick: t => { const d = new Date(+t.dataset.t); if (CAL.sel && sameDay(CAL.sel, d)) { CAL.cur = d; CAL.view = "day"; } else { CAL.sel = d.getTime(); if (d.getMonth() !== CAL.cur.getMonth()) CAL.cur = new Date(d.getFullYear(), d.getMonth(), 1); } render(); },
+  calEv: t => openCalEv(t.dataset.id),
+  calEvTarget: t => { const e = evById(t.dataset.id); e.target = !e.target; save(); openCalEv(e.id); render(); },
+  calRules: () => { closeSheet(); setTimeout(() => { const r = $("#calRules"); if (r) r.scrollIntoView({behavior:"smooth", block:"start"}); }, 50); },
   rule: t => { const k = t.dataset.r; S.rules[k] = !S.rules[k]; save(); render(); },
   runTask: t => { const r = recommendations().find(x => x.k === t.dataset.k); if (!r) return;
     if (r.type === "local") return openLocal(r.country, r.ev.id);
