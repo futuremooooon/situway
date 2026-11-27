@@ -1153,12 +1153,38 @@ async function askText(messages, fallback){
   try { const r = await SAMPLE(messages, {modelTier:"quick", cache:false}); return (r && r.text ? plainText(r.text) : "") || fallback(); }
   catch(e){ if (e && e.code === "not_granted") { SAMPLE = null; aiPill(); } return fallback(); }
 }
-let speakToken = 0;
-function stopSpeak(){ speakToken++; try { TTS && TTS.stop(); } catch(e){} try { window.speechSynthesis && speechSynthesis.cancel(); } catch(e){} }
+let speakToken = 0, _utt = null, _voices = [];
+function loadVoices(){ try { _voices = speechSynthesis.getVoices() || []; } catch(e){} }
+if ("speechSynthesis" in window) { loadVoices(); try { speechSynthesis.onvoiceschanged = loadVoices; } catch(e){} }
+function pickVoice(lang){ if (!_voices.length) loadVoices(); const L = lang.toLowerCase(), base = L.split("-")[0];
+  return _voices.find(v => v.lang && v.lang.toLowerCase().replace("_","-") === L && /google|samantha|yuna|natural/i.test(v.name))
+      || _voices.find(v => v.lang && v.lang.toLowerCase().replace("_","-") === L)
+      || _voices.find(v => v.lang && v.lang.toLowerCase().startsWith(base)) || null; }
+function stopSpeak(){ speakToken++; try { TTS && TTS.stop(); } catch(e){} try { if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel(); } catch(e){} }
+/* browser speech with the usual Chrome/Safari pitfalls handled: paused engine, lost onend, GC'd utterance */
+function browserSay(text, lang, rate){
+  return new Promise(res => {
+    if (!("speechSynthesis" in window) || !text) { setTimeout(res, Math.min(4000, 400 + (text||"").length * 55)); return; }
+    let done = false; const fin = () => { if (done) return; done = true; clearTimeout(wd); clearInterval(ka); res(); };
+    const est = 1500 + text.length * 90 / (rate || 1);
+    const wd = setTimeout(fin, est + 4000);
+    let ka = 0;
+    try {
+      speechSynthesis.resume();
+      const u = new SpeechSynthesisUtterance(text); _utt = u;
+      u.lang = lang; u.rate = rate || 1; u.volume = 1; const v = pickVoice(lang); if (v) u.voice = v;
+      u.onend = fin; u.onerror = fin;
+      speechSynthesis.speak(u);
+      ka = setInterval(() => { try { if (speechSynthesis.paused) speechSynthesis.resume(); } catch(e){} }, 1000);
+    } catch(e){ fin(); }
+  });
+}
 function speakOne(text, voice, rate){
-  if (TTS) return TTS.speak(text, {voice: voice || "buttery", language:"en", rate: rate || 1}).catch(()=>{});
-  if ("speechSynthesis" in window) return new Promise(res => { try { const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = .95 * (rate || 1); u.onend = res; u.onerror = res; speechSynthesis.speak(u); } catch(e){ res(); } });
-  return new Promise(r => setTimeout(r, Math.min(4000, 400 + text.length * 55)));
+  if (TTS) return Promise.race([
+      TTS.speak(text, {voice: voice || "buttery", language:"en", rate: rate || 1}).then(() => true, () => false),
+      new Promise(r => setTimeout(() => r(true), 2500 + text.length * 120))
+    ]).then(ok => ok ? null : browserSay(text, "en-US", .95 * (rate || 1)));
+  return browserSay(text, "en-US", .95 * (rate || 1));
 }
 function micBtn(target){ return DICT ? `<button class="mic" type="button" data-act="mic" data-target="${target}" aria-label="말해서 입력">${ic("mic")}</button>` : ""; }
 function micClick(target){
@@ -2251,9 +2277,8 @@ function chime(){
   try { navigator.vibrate && navigator.vibrate([200, 80, 200]); } catch(e){}
 }
 function speakKo(text){
-  if (TTS) return TTS.speak(text, {voice:"glassy", language:"ko"}).catch(()=>{});
-  if ("speechSynthesis" in window) return new Promise(res => { try { const u = new SpeechSynthesisUtterance(text); u.lang = "ko-KR"; u.onend = res; u.onerror = res; speechSynthesis.speak(u); } catch(e){ res(); } });
-  return Promise.resolve();
+  if (TTS) return TTS.speak(text, {voice:"glassy", language:"ko"}).then(() => null, () => browserSay(text, "ko-KR", 1));
+  return browserSay(text, "ko-KR", 1);
 }
 /* arrival & transfer alerts: pause learning audio, chime, speak, then resume for a pre-alert */
 async function fireAlert(a){
@@ -2298,10 +2323,13 @@ async function playLines(){
   const f = curFmt();
   if (f.f === "none") { P.playing = false; renderPlayer(); return; }
   const lines = playerLines(f);
-  P.playing = true; renderPlayer(); const tok = ++speakToken;
+  stopSpeak(); P.playing = true; renderPlayer(); const tok = ++speakToken;
+  if (P.line >= lines.length) P.line = 0;
   while (P && P.playing && P.line < lines.length && tok === speakToken) {
     await speakOne(lines[P.line].en, lines[P.line].v);
-    if (!P || tok !== speakToken || !P.playing) return;
+    if (!P) return;
+    if (tok !== speakToken) { if (P.playing && tok === speakToken - 1 && !P._restarting) { P.playing = false; renderPlayerKeep(); } return; }
+    if (!P.playing) return;
     if (P.line < lines.length - 1) { P.line++; renderPlayerKeep(); } else break;
   }
   if (P) { P.playing = false; renderPlayerKeep(); }
@@ -3178,12 +3206,12 @@ const A = {
   alertMode: t => { S.alertGps = t.dataset.m === "gps"; save(); refreshCm(); },
   openReflect: () => openReflect(),
   demoAuto: () => { P.auto = !P.auto; renderPlayerKeep(); },
-  alertOk: () => { const done = P && P.done; if (!P) return; P.alert = null; stopSpeak(); if (done) finishPlayer(); else renderPlayerKeep(); },
+  alertOk: () => { const done = P && P.done; if (!P) return; P.alert = null; if (!P.playing) stopSpeak(); if (done) finishPlayer(); else renderPlayerKeep(); },
   segPick: t => { S.commute.picks = S.commute.picks || {}; const pos = S.commute.mode === "car" ? "car" : S.commute.posture; S.commute.picks[segKey(+t.dataset.i, pos)] = t.dataset.f; save(); refreshCm(); },
   posture: t => { const p = t.dataset.p; if (p === "car") S.commute.mode = "car"; else { S.commute.mode = "transit"; S.commute.posture = p; } save(); refreshCm(); },
   useRecent: t => { const morning = new Date().getHours() < 14, r = S.recentRoutes[+t.dataset.i]; S.commute.fromId = morning ? r.from : r.to; S.commute.toId = morning ? r.to : r.from; save(); renderCommute(); },
   depart: () => { const r = curRoute(); if (!r) { openCommute(); return; } CMOPEN = false;
-    try { const u = new SpeechSynthesisUtterance(""); speechSynthesis.speak(u); } catch(e){}
+    try { if ("speechSynthesis" in window) { speechSynthesis.resume(); loadVoices(); } } catch(e){}
     const useGps = S.alerts !== false && S.alertGps && S.commute.mode !== "car" && !liveLockReason(); let tokP = null;
     if (useGps) tokP = idToken().catch(e => { toast(e.message); return null; });
     setTimeout(() => { if (P && useGps && tokP) liveRealBg(tokP); else if (P) autoListen(); }, 0);
