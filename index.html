@@ -328,6 +328,12 @@ textarea.input{resize:vertical;min-height:120px;line-height:1.55}
 .thumb{position:relative;flex:none;display:block;border-radius:16px;box-shadow:0 4px 12px rgba(30,60,140,.14)}
 .thumb svg{display:block}
 .thumb em{position:absolute;right:4px;bottom:4px;font-style:normal;font-size:11px;font-weight:700;line-height:1;padding:3px 5px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff}
+.alertmode{display:flex;flex-direction:column;gap:6px;padding:4px 2px 0}
+.alertmode .seg-picker button[disabled]{opacity:.5}
+.commutecard{border:1.5px solid var(--brand-soft)}
+.livebox{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:14px;background:var(--brand-soft);margin-top:4px}
+.livebox.locked{background:var(--surface-2)}
+.livebox b svg{vertical-align:-3px}
 .odusage{padding:10px 12px;border-radius:12px;background:var(--brand-soft)}
 .lvst,.lvpath{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;color:var(--ink);font:inherit}
 .lvpath{flex-direction:column;align-items:stretch;gap:8px;text-align:left}
@@ -1110,7 +1116,7 @@ function gain(n, label){
 /* ---------- deploy config ----------
    claude.ai 밖에서 배포할 때 config.js의 SITUWAY_CONFIG로 값을 넣어요.
    GOOGLE_CLIENT_ID: Google Cloud 콘솔의 OAuth 웹 클라이언트 ID (비워 두면 .ics 파일 불러오기만 써요) */
-const CONFIG = Object.assign({GOOGLE_CLIENT_ID:"", ODSAY_KEY:"", LIVE_REAL:false}, window.SITUWAY_CONFIG || {});
+const CONFIG = Object.assign({GOOGLE_CLIENT_ID:"", ODSAY_KEY:"", LIVE_REAL:false, COUNTER_URL:""}, window.SITUWAY_CONFIG || {});
 let SAMPLE = null, TTS = null, DICT = null, micTarget = null, micOn = false;
 function aiPill(){ const p = $("#aiPill"); if (!p) return; p.textContent = SAMPLE ? "AI 연결됨" : "시연 모드"; p.classList.toggle("on", !!SAMPLE); p.title = SAMPLE ? "Claude가 피드백과 대화를 만들어요" : "AI 없이 규칙 기반으로 동작해요"; }
 (function initCaps(){
@@ -1547,7 +1553,7 @@ function liveNavBody(){
     <div class="row wrap" style="gap:6px">${p.subPath.filter(x => x.sectionTime > 0).map(x => { const k = p.subPath.indexOf(x); return `<span class="chip ${k === LN.seg ? "brand" : ""}" style="${k < LN.seg ? "opacity:.45" : ""}">${esc(segLabel(x))}</span>`; }).join("")}</div>`;
 }
 function renderLive(){
-  if (!LN) return;
+  if (!LN || LN.bg) return;
   let body, foot = "";
   if (LN.step === "setup" && !CONFIG.LIVE_REAL) { body = liveSetupBody(); foot = ""; }
   else if (LN.step === "setup") { body = liveSetupBody(); foot = `${odKey() ? "" : `<button class="btn" data-act="liveDemo">시연 경로로 보기</button>`}<button class="btn primary" data-act="liveSearch" ${odKey() && LN.to ? "" : "disabled"}>경로 찾기${odKey() ? ` (남은 ${odLeft()}회)` : ""}</button>`; }
@@ -1581,6 +1587,7 @@ function patchLiveFoot(t){ const f = $("#layer .sheet-foot"); if (f) f.innerHTML
 /* ---- navigation ---- */
 function liveAlert(kind, msg, sub, say){
   LN.msg = msg; LN.sub = sub || ""; LN.alertKind = kind;
+  if (LN.bg && say) toast(msg + (sub ? " · " + sub : ""));
   if (say) { speakKo(say); try { navigator.vibrate && navigator.vibrate(kind === "now" ? [400, 150, 400, 150, 400] : [250, 120, 250]); } catch(e){} }
   if (say && document.visibilityState !== "visible" && "Notification" in window && Notification.permission === "granted") {
     const opt = {body:sub || "", tag:"situway-live", renotify:true, icon:"icon-192.png"};
@@ -1635,6 +1642,7 @@ const liveSkipRender = () => !$("#layer .sheet[data-cls=live]");
 function liveAdvance(){
   if (LN.seg >= LN.path.subPath.length - 1) { liveAlert("now", "도착했어요", "안내를 마칠게요.", "목적지에 도착했습니다."); liveStop(false); return; }
   LN.seg++; LN.idx = 0; LN.boarded = false; LN.leaveAt = 0; segIntro(); if (LN.sim) LN.simT = 0; renderLive();
+  if (LN.bg && P) { const walk = LN.path.subPath[LN.seg].trafficType === 3; let j = P.i + 1; while (j < P.segs.length && (P.segs[j].type === "walk") !== walk) j++; if (j < P.segs.length) { if (walk) { P.playing = false; stopSpeak(); } P.i = j; P.t = 0; P.line = 0; P.pick = null; P.flip = false; renderPlayer(); if (!walk) setTimeout(autoListen, 2500); } }
 }
 /* simulation: moves a fake position along the path so the alerts can be shown indoors */
 function liveSimStart(){
@@ -1663,7 +1671,7 @@ function render(){
   tabs.innerHTML = TABS.map(([k, l, i]) => `<button data-act="tab" data-tab="${k}" ${S.tab === k ? 'aria-current="page"' : ""}>${ic(i, 22)}<span>${l}</span></button>`).join("");
   const m = $("#main");
   m.innerHTML = ({today:vToday, calendar:vCalendar, tasks:vTasks, exprs:vExprs, goals:vGoals}[S.tab] || vToday)();
-  const fab = $("#fab"); if (fab) { const mo = new Date().getHours() < 14; fab.hidden = S.tab !== "today"; fab.innerHTML = `${ic(S.commute.mode === "car" ? "car" : "bus", 26)}<span>${mo ? "출근하기" : "퇴근하기"}</span>`; }
+  const fab = $("#fab"); if (fab) { const mo = new Date().getHours() < 14; fab.hidden = true; fab.innerHTML = `${ic(S.commute.mode === "car" ? "car" : "bus", 26)}<span>${mo ? "출근하기" : "퇴근하기"}</span>`; }
   const L = lvInfo(S.xp), lp = $("#lvPill"); if (lp) lp.innerHTML = `<span>Lv.${L.lv}</span><i><b style="width:${L.pct * 100}%"></b></i>`;
   aiPill();
 }
@@ -1671,6 +1679,124 @@ function setTab(t){ S.tab = t; save(); render(); $("#main").scrollTop = 0; try {
 
 const addMin = (d, m) => { const x = new Date(d); x.setMinutes(x.getMinutes() + m); return x; };
 function placeLabel(p){ if (!p) return ""; if (p.id === S.places.home) return "집 · " + p.name; if (p.id === S.places.work) return (S.places.hasJob === false ? "자주 가는 곳 · " : "회사 · ") + p.name; return p.name; }
+/* ---------- 실제 위치 승하차 알림: Google 계정당 1회, 전체 20회 (공용 카운터) ---------- */
+const LIVE_LIMIT = 20;
+const PLACE_GEO = {p_ifc:[37.5252,126.9258], p_parkone:[37.5268,126.9277], p_dtower:[37.5708,126.9787], p_ttower:[37.5662,126.9845], p_gfc:[37.5000,127.0366], p_coex:[37.5116,127.0595], p_pangyo:[37.4016,127.1086], p_lgsp:[37.5617,126.8350], p_gdigital:[37.4783,126.8825], p_cityhall:[37.5663,126.9779], p_snu:[37.4600,126.9520], p_ujangsan:[37.5488,126.8363], p_hwagok:[37.5416,126.8402], p_mokdong:[37.5310,126.8740], p_magok:[37.5668,126.8272], p_sillim:[37.4842,126.9297], p_daerim:[37.4925,126.8950]};
+const ST_GEO = {"우장산":[37.5488,126.8363],"화곡":[37.5416,126.8402],"마곡나루":[37.5668,126.8272],"목동":[37.5260,126.8648],"염창":[37.5470,126.8746],"당산":[37.5341,126.9022],"여의도":[37.5216,126.9243],"노량진":[37.5131,126.9425],"영등포구청":[37.5254,126.8965],"신길":[37.5172,126.9175],"시청":[37.5657,126.9769],"광화문":[37.5710,126.9768],"종각":[37.5702,126.9831],"을지로입구":[37.5660,126.9822],"강남":[37.4979,127.0276],"역삼":[37.5006,127.0364],"신논현":[37.5045,127.0250],"선릉":[37.5045,127.0490],"삼성":[37.5088,127.0631],"판교":[37.3948,127.1111],"가산디지털단지":[37.4815,126.8826],"대림":[37.4925,126.8950],"신림":[37.4842,126.9297],"고속터미널":[37.5049,127.0049]};
+const placeGeo = p => { const g = p && (PLACE_GEO[p.id] || ST_GEO[p.st]); return g ? {x:g[1], y:g[0]} : null; };
+let LIVE_STATUS = null, ID_TOKEN = null, ID_EXP = 0;
+const liveUsedLocal = () => !!(odStore("situway-live-used") || {}).at;
+const LOCK_SVG = s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+const liveReady = () => !!(CONFIG.COUNTER_URL && CONFIG.GOOGLE_CLIENT_ID && CONFIG.ODSAY_KEY && !window.claude);
+async function counterCall(body){
+  const r = await fetch(CONFIG.COUNTER_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body)});
+  return r.json();
+}
+async function liveStatus(force){
+  if (!liveReady()) return null;
+  if (LIVE_STATUS && !force && Date.now() - LIVE_STATUS.t < 60000) return LIVE_STATUS;
+  try { const j = await counterCall({action:"status"}); LIVE_STATUS = {...j, t:Date.now()}; } catch(e){ LIVE_STATUS = {ok:false, err:true, t:Date.now()}; }
+  return LIVE_STATUS;
+}
+function idToken(){
+  if (ID_TOKEN && Date.now() < ID_EXP) return Promise.resolve(ID_TOKEN);
+  return new Promise((res, rej) => {
+    if (!(window.google && google.accounts && google.accounts.oauth2)) return rej(new Error("Google 로그인을 불러오는 중이에요. 잠시 뒤 다시 눌러 주세요."));
+    const tc = google.accounts.oauth2.initTokenClient({client_id:CONFIG.GOOGLE_CLIENT_ID, scope:"openid email",
+      callback:r => { if (r.error) return rej(new Error("Google 로그인을 완료하지 못했어요.")); ID_TOKEN = r.access_token; ID_EXP = Date.now() + ((r.expires_in || 3600) - 60) * 1000; res(ID_TOKEN); },
+      error_callback:e => rej(new Error(e && e.type === "popup_closed" ? "로그인 창을 닫았어요." : e && e.type === "popup_failed_to_open" ? "로그인 창이 막혔어요. 버튼을 다시 눌러 주세요." : "Google 로그인을 완료하지 못했어요."))});
+    tc.requestAccessToken({prompt:""});
+  });
+}
+function liveLockReason(){
+  const t = placeById(S.commute.toId), st = LIVE_STATUS;
+  if (!liveReady()) return "공개 링크에서 Google 로그인 후 쓸 수 있어요";
+  if (!placeGeo(t)) return "이 도착지는 아직 지원하지 않아요";
+  if (liveUsedLocal()) return "이 계정은 1회를 사용했어요";
+  if (st && st.ok && st.left === 0) return `전체 ${LIVE_LIMIT}회가 모두 사용됐어요`;
+  return "";
+}
+function alertModeRow(){
+  const lock = liveLockReason(), st = LIVE_STATUS, gps = S.alertGps && !lock;
+  return `<div class="alertmode">
+    <span class="small muted">알림 기준</span>
+    <div class="seg-picker two" role="group" aria-label="알림 기준"><button data-act="alertMode" data-m="time" aria-pressed="${!gps}">예상 시간</button><button data-act="alertMode" data-m="gps" aria-pressed="${gps}" ${lock ? "disabled" : ""}>${lock ? LOCK_SVG(14) + " " : ""}실제 위치</button></div>
+    <span class="xs muted">${lock ? esc(lock) : `실제 위치는 Google 계정당 1회 제공해요${st && st.ok ? ` · 전체 남은 ${st.left}/${LIVE_LIMIT}회` : ""}`}</span>
+  </div>`;
+}
+function liveBox(){
+  const t = placeById(S.commute.toId), st = LIVE_STATUS, used = liveUsedLocal();
+  const left = st && st.ok ? st.left : null;
+  let state = "ready", note = "";
+  if (!liveReady()) { state = "off"; note = "공개 링크(futuremooooon.github.io)에서 Google 로그인 후 쓸 수 있어요."; }
+  else if (!placeGeo(t)) { state = "off"; note = "이 도착지는 아직 실제 안내를 지원하지 않아요."; }
+  else if (used) { state = "used"; note = "이 기기에서 이미 1회를 사용했어요."; }
+  else if (left === 0) { state = "full"; note = "전체 20회가 모두 사용됐어요."; }
+  const locked = state !== "ready";
+  return `<div class="livebox ${locked ? "locked" : ""}">
+    <div class="row between"><b>${locked ? LOCK_SVG(18) : ic("bell", 18)} 실제 위치 승하차 알림</b><span class="chip ${locked ? "" : "brand"}">계정당 1회 제공</span></div>
+    <p class="small muted" style="margin:0">지금 위치에서 ${esc(t ? t.name : "도착지")}까지 실제 경로를 찾아, GPS로 탈 곳과 내릴 곳을 알려 줘요. Google 계정당 1회, 모든 사용자 합쳐 ${LIVE_LIMIT}회까지만 제공해요.</p>
+    <p class="xs muted" style="margin:0">${liveReady() ? (left === null ? "남은 횟수 확인 중…" : `전체 남은 횟수 <b>${left}/${LIVE_LIMIT}회</b>`) : ""}${note ? (liveReady() && left !== null ? " · " : "") + esc(note) : ""}</p>
+    <div class="row" style="gap:8px"><button class="btn" data-act="liveOpen">예시로 체험</button><button class="btn ${locked ? "" : "brand"}" style="flex:1" data-act="liveReal" ${locked ? "disabled" : ""}>${locked ? LOCK_SVG(16) + " 잠김" : "실제 위치로 안내 (1회)"}</button></div>
+  </div>`;
+}
+const isAudio = f => ["podcast", "review", "video", "drive"].includes(f);
+function autoListen(){ if (P && isAudio(curFmt().f) && !P.playing) playLines(); }
+async function liveRealBg(tokP){
+  const tok = await tokP; if (!tok || !P) { autoListen(); return; }
+  const t = placeById(S.commute.toId), dest = placeGeo(t); let claimed = false;
+  try {
+    const c = await counterCall({action:"claim", token:tok});
+    if (!c.ok) throw new Error(c.reason === "used" ? "이 계정은 실제 위치 알림을 이미 1회 사용했어요. 예상 시간으로 알려 드릴게요." : c.reason === "full" ? "실제 위치 알림이 모두 마감됐어요. 예상 시간으로 알려 드릴게요." : "계정을 확인하지 못해 예상 시간으로 알려 드릴게요.");
+    claimed = true; LIVE_STATUS = {ok:true, left:c.left, t:Date.now()};
+    const here = await hereNow();
+    const r = await odsay("searchPubTransPathT", {SX:+here.x.toFixed(4), SY:+here.y.toFixed(4), EX:dest.x, EY:dest.y, OPT:"0"});
+    const path = r && r.path && r.path[0]; if (!path) throw new Error("실제 경로를 찾지 못해 예상 시간으로 알려 드릴게요.");
+    odStore("situway-live-used", {at:Date.now(), to:t.name});
+    if (!P) return;
+    P.auto = false; P.gps = true;
+    LN = {step:"setup", results:[], paths:[], fromResults:[], bg:true, to:{name:t.name}, fromName:"현재 위치"};
+    liveBegin(path);
+    toast("실제 위치로 승하차를 알려 드릴게요.");
+  } catch(e){
+    if (claimed) { try { await counterCall({action:"refund", token:tok}); } catch(_){} }
+    if (/이미 1회/.test(e.message)) odStore("situway-live-used", {at:Date.now()});
+    toast(e.message);
+  }
+  autoListen();
+}
+async function liveReal(){
+  const t = placeById(S.commute.toId), dest = placeGeo(t);
+  if (!liveReady() || !dest) return;
+  let tok;
+  try { tok = await idToken(); } catch(e){ toast(e.message); return; }
+  LN = {step:"setup", results:[], paths:[], fromResults:[], to:{name:t.name}, fromName:"현재 위치"};
+  sheet("실시간 승하차 알림", `<div class="card"><b>실제 경로를 준비하는 중이에요…</b><p class="small muted" style="margin:6px 0 0">계정 확인 → 현재 위치 확인 → 경로 검색 순서로 진행해요.</p></div>`, "", "live");
+  let claimed = false;
+  try {
+    const c = await counterCall({action:"claim", token:tok});
+    if (!c.ok) throw new Error(c.reason === "used" ? "이 Google 계정은 이미 1회를 사용했어요." : c.reason === "full" ? `전체 ${LIVE_LIMIT}회가 모두 사용됐어요.` : "계정을 확인하지 못했어요.");
+    claimed = true; LIVE_STATUS = {ok:true, left:c.left, t:Date.now()};
+    const here = await hereNow();
+    const r = await odsay("searchPubTransPathT", {SX:+here.x.toFixed(4), SY:+here.y.toFixed(4), EX:dest.x, EY:dest.y, OPT:"0"});
+    const path = r && r.path && r.path[0];
+    if (!path) throw new Error("지금 위치에서 가는 대중교통 경로가 없어요.");
+    odStore("situway-live-used", {at:Date.now(), to:t.name});
+    liveBegin(path);
+  } catch(e){
+    if (claimed && e.message.indexOf("1회") < 0) { try { const rf = await counterCall({action:"refund", token:tok}); LIVE_STATUS = {ok:true, left:rf.left, t:Date.now()}; } catch(_){} }
+    if (e.message.indexOf("1회를 사용") >= 0) odStore("situway-live-used", {at:Date.now()});
+    sheet("실시간 승하차 알림", `<div class="card"><b>${esc(e.message)}</b><p class="small muted" style="margin:6px 0 0">${claimed ? "횟수는 차감되지 않았어요. " : ""}예시 경로로는 언제든 체험할 수 있어요.</p></div>`, `<button class="btn block" data-act="liveOpen">예시로 체험</button>`);
+  }
+}
+
+function commuteCard(){
+  const mo = new Date().getHours() < 14, car = S.commute.mode === "car";
+  const f = placeById(S.commute.fromId), t = placeById(S.commute.toId), r = curRoute();
+  const a = mo ? f : t, b = mo ? t : f;
+  const sub = a && b && r ? `${esc(a.name)} → ${esc(b.name)} · ${r.total}분${car ? "" : ` · 학습 ${learnMin(r)}분`}` : "출발지와 도착지를 정하면 이동 시간에 맞춰 학습을 나눠요";
+  return `<button class="rec commutecard" data-act="commute">${thumb("bus", mo ? "출근" : "퇴근")}<span class="stack" style="gap:2px;flex:1;text-align:left"><b class="evtitle">${mo ? "출근하기" : "퇴근하기"}</b><span class="muted">${sub}</span></span><span class="btn sm brand" aria-hidden="true">${ic(car ? "car" : "bus", 18)} 시작</span></button>`;
+}
 function commuteBody(){
   const now = new Date(), h = now.getHours(), morning = h < 14;
   const ev = focusEvent(), pack = packOf(ev);
@@ -1715,7 +1841,8 @@ function commuteBody(){
       ${rk !== "C" ? `<div class="seg-picker two" role="group" aria-label="지금 상태">${[["stand", "서서 가요"], ["sit", "앉아서 가요"]].map(([k, l]) => `<button data-act="posture" data-p="${k}" aria-pressed="${posture === k}">${l}</button>`).join("")}</div>` : ""}
       <div class="rdetail-h"><b>구간별 학습</b><span class="small muted">구간마다 학습 방식을 바꿀 수 있어요</span></div><div class="rsteps">${steps2}</div>
       ${ev ? `<div class="studyfor"><span class="sf-v"><span class="sf-k">이동하며 배울 것</span><b>${esc(pack.title)}</b><span class="muted">${relDay(ev.start)} ${fmtTime(ev.start)} ${esc(ev.title)}에서 쓸 표현</span></span></div>` : ""}
-      <button class="alert-toggle" data-act="alerts" aria-pressed="${S.alerts !== false}">${ic("bell", 20)} <span>내릴 때·갈아탈 때 이어폰으로 알림</span><b>${S.alerts !== false ? "켜짐" : "꺼짐"}</b></button>`
+      <button class="alert-toggle" data-act="alerts" aria-pressed="${S.alerts !== false}">${ic("bell", 20)} <span>내릴 때·갈아탈 때 이어폰으로 알림</span><b>${S.alerts !== false ? "켜짐" : "꺼짐"}</b></button>
+      ${S.commute.mode === "car" || S.alerts === false ? "" : alertModeRow()}`
       : recentChips()}
     </div></div>`;
 }
@@ -1737,6 +1864,7 @@ function renderCommute(){
   sheet(morning ? "출근 경로" : "퇴근 경로", commuteBody(), `<button class="btn primary block xl" data-act="depart" ${r ? "" : "disabled"}>${icFill("play", 22)} 이 경로로 출발 · 알림 시작</button>`);
   sheetNoStop = false; CMOPEN = true;
   const sb2 = $("#sb"); if (sb2) sb2.scrollTop = st;
+  if (liveReady() && (!LIVE_STATUS || Date.now() - LIVE_STATUS.t > 60000)) liveStatus().then(() => { if (CMOPEN) renderCommute(); });
 }
 const refreshCm = () => { if (CMOPEN) renderCommute(); else render(); };
 
@@ -1768,7 +1896,8 @@ function vToday(){
     </div>
   </div>
   ${S.resume ? `<button class="rec" data-act="resume">${thumb("video", "이어서")}<span class="stack" style="gap:2px;flex:1;text-align:left"><span class="muted">이어서 하기</span><b class="evtitle">${esc(S.resume.label)}</b></span>${ic("chev", 22)}</button>` : ""}
-  <button class="rec livecard" data-act="liveOpen">${thumb("bus", CONFIG.LIVE_REAL ? "GPS" : "체험")}<span class="stack" style="gap:2px;flex:1;text-align:left"><b class="evtitle">실시간 승하차 알림</b><span class="muted">${CONFIG.LIVE_REAL ? "실제 경로를 찾고 GPS로 탈 곳·내릴 곳을 알려 줘요" : "예시 경로로 탈 곳·내릴 곳 알림을 체험해요"}</span></span>${ic("chev", 22)}</button>
+  ${commuteCard()}
+
   <div class="sec-title"><h2>오늘의 추천</h2><span class="muted small">내 일정에 맞춰 골랐어요</span></div>
   <div class="stack" style="gap:10px">${recs.map(recBtn).join("")}</div>
   <div class="card">
@@ -2023,7 +2152,7 @@ function sheet(title, body, foot = "", cls = ""){
 }
 let LASTCV = null;
 function closeSheet(){
-  if (LN) liveStop(true);
+  if (LN && !(LN.bg && P)) liveStop(true);
   if (U && U.await) { stopSpeak(); CV = null; const k = U.await; U.await = null; if ((k === "email" && S.done["unit-" + U.id]) || (k === "convo" && LASTCV === U.u.convo)) U.tasks[k] = true; saveUnitProg(); renderUnit(); return; }
   if (U) { U.playing = false; clearInterval(ytTimer); U = null; }
   CMOPEN = false; SR = null; if (P && P.timer) clearInterval(P.timer); stopSpeak(); if (micOn && DICT) DICT.stop().catch(()=>{}); P = null; CV = null; $("#layer").innerHTML = ""; render(); }
@@ -2083,7 +2212,7 @@ function renderPlayer(){
       <div class="stack">${q.opts.map((o, i) => `<button class="opt ${P.pick != null ? (i === q.a ? "right" : i === P.pick ? "wrong" : "") : ""}" data-act="pick" data-i="${i}" ${P.pick != null ? "disabled" : ""}>${esc(o)}</button>`).join("")}</div>
       ${P.pick != null ? `<div class="feedback-bar ${P.pick === q.a ? "ok" : "no"}"><b style="font-size:18px">${P.pick === q.a ? "정답 · +5 XP" : "초록색 문장이 더 자연스러워요"}</b><span style="color:var(--ink)">${esc(q.why)}</span></div><button class="btn primary" data-act="nextQ">다음 문제</button>` : ""}`;
   } else if (f.f === "none") {
-    body = `<div class="walkrest">${ic("walk", 40)}<b>걷는 중에는 재생하지 않아요</b><p class="small muted">주변을 살피며 걸어 주세요. 다음 구간에 타면 이어서 시작해요.</p></div>`;
+    body = `<div class="walkrest">${ic("walk", 40)}<b>걷는 중에는 재생하지 않아요</b><p class="small muted">주변을 살피며 걸어 주세요. 다음 구간에 타면 듣기가 자동으로 시작돼요.</p></div>`;
   } else if (f.f === "drive") {
     body = `<div class="celebrate">${mascot(96)}<p class="mascot-say">운전 중에는 화면을 보지 않아도 돼요. 음성으로만 이야기해요.</p></div><button class="btn primary block xl" data-act="convo" data-c="free">${ic("car", 20)} 음성 대화 시작</button>`;
   }
@@ -2158,9 +2287,11 @@ function arriveSeg(){
   if (sg.stops && nx.stops) a = {kind:"arrive", title:`${sg.to}에서 내려요`, sub:`${LINE[nx.line].n}(으)로 갈아타요`, say:`${sg.to}입니다. 지금 내려서 ${LINE[nx.line].n}으로 갈아타세요.`};
   else if (sg.stops) a = {kind:"arrive", title:`${sg.to}에서 내려요`, sub:`${nx.from}로 나가요`, say:`${sg.to}입니다. 지금 내리세요.`};
   else a = {kind:"arrive", title:`${nx.label} 탈 차례예요`, sub:nx.dir || "", say:`${nx.label} 타는 곳에 도착했어요.`};
+  const wasWalk = sg.type === "walk";
   if (nx.type === "walk") { P.playing = false; stopSpeak(); }
   P.i++; P.t = 0; P.preFired = false; P.line = 0; P.pick = null; P.flip = false;
   savePlayerResume(); renderPlayer(); fireAlert(a);
+  if (wasWalk && P.listen !== false) { const nf = curFmt().f; if (isAudio(nf)) setTimeout(() => { if (P && !P.playing && curFmt().f === nf) playLines(); }, 2600); }
 }
 
 async function playLines(){
@@ -2181,6 +2312,7 @@ let sheetNoStop = false;
 function savePlayerResume(){ if (!P) return; S.resume = {label:(P.label || "이동 중 학습") + " · " + P.segs[P.i].label, segs:P.segs, i:P.i, ev:P.ev}; save(); }
 function finishPlayer(){
   if (P && P.timer) clearInterval(P.timer);
+  if (LN && LN.bg) liveStop(true);
   const mins = P.segs.reduce((a, s) => a + s.min, 0);
   S.weekly.done = Math.min(S.weekly.done + 1, 99); S.weekLog.minutes += Math.round(mins * .7); S.weekLog.sessions++; S.resume = null; save();
   const pk = PACKS[P.packKey]; const ev = evById(P.ev);
@@ -3043,6 +3175,7 @@ const A = {
   gcalCheck: () => { GC.state = "checking"; render(); gcalStatus(); },
   redoOnb: () => { closeSheet(); startOnb(); },
   alerts: () => { S.alerts = S.alerts === false; save(); refreshCm(); },
+  alertMode: t => { S.alertGps = t.dataset.m === "gps"; save(); refreshCm(); },
   openReflect: () => openReflect(),
   demoAuto: () => { P.auto = !P.auto; renderPlayerKeep(); },
   alertOk: () => { const done = P && P.done; if (!P) return; P.alert = null; stopSpeak(); if (done) finishPlayer(); else renderPlayerKeep(); },
@@ -3050,11 +3183,15 @@ const A = {
   posture: t => { const p = t.dataset.p; if (p === "car") S.commute.mode = "car"; else { S.commute.mode = "transit"; S.commute.posture = p; } save(); refreshCm(); },
   useRecent: t => { const morning = new Date().getHours() < 14, r = S.recentRoutes[+t.dataset.i]; S.commute.fromId = morning ? r.from : r.to; S.commute.toId = morning ? r.to : r.from; save(); renderCommute(); },
   depart: () => { const r = curRoute(); if (!r) { openCommute(); return; } CMOPEN = false;
+    try { const u = new SpeechSynthesisUtterance(""); speechSynthesis.speak(u); } catch(e){}
+    const useGps = S.alerts !== false && S.alertGps && S.commute.mode !== "car" && !liveLockReason(); let tokP = null;
+    if (useGps) tokP = idToken().catch(e => { toast(e.message); return null; });
+    setTimeout(() => { if (P && useGps && tokP) liveRealBg(tokP); else if (P) autoListen(); }, 0);
     { const f = S.commute.fromId, t = S.commute.toId, m = new Date().getHours() < 14; const pair = m ? {from:f, to:t} : {from:t, to:f}; S.recentRoutes = [pair, ...(S.recentRoutes || []).filter(x => !(x.from === pair.from && x.to === pair.to))].slice(0, 3); save(); } const ev = focusEvent(); const pos = S.commute.mode === "car" ? "car" : S.commute.posture; startPlayer(r.segs.map((s, i) => { const fm = fmtFor(s, pos, i); return {...s, forceF:fm.f, forceName:fm.name}; }), ev && ev.id, (new Date().getHours() < 14 ? "출근길" : "퇴근길") + " 학습"); },
   resume: () => { const R = S.resume; startPlayer(R.segs, R.ev, R.label.split(" · ")[0]); P.i = Math.min(R.i, R.segs.length - 1); renderPlayer(); },
   pack: t => openPack(t.dataset.ev),
   practice: t => { const f = t.dataset.f; const names = {podcast:"대화 듣기", cards:"표현 카드", quiz:"듣기 퀴즈"}; startPlayer([{type:"practice", label:"집중 연습", min:5, forceF:f, forceName:names[f], why:"원하는 방식으로 연습"}], t.dataset.ev, "상황 팩 연습"); },
-  pPlay: () => { if (P.playing) { P.playing = false; stopSpeak(); renderPlayer(); } else playLines(); },
+  pPlay: () => { if (P.playing) { P.playing = false; P.listen = false; stopSpeak(); renderPlayer(); } else { P.listen = true; playLines(); } },
   pNext: () => { stopSpeak(); P.playing = false; const f = curFmt(); const n = playerLines(f).length; P.line = Math.min(n - 1, P.line + 1); renderPlayer(); },
   pPrev: () => { stopSpeak(); P.playing = false; P.line = Math.max(0, P.line - 1); renderPlayer(); },
   pKo: () => { P.showKo = !P.showKo; renderPlayerKeep(); },
@@ -3069,7 +3206,8 @@ const A = {
   mic: t => micClick(t.dataset.target),
   reflect: () => doReflect(),
   saveReflect: () => { if (!RF) return; S.stats.reflect++; Q().reflect = 1; addExpr(RF.en, RF.ko, "성찰 · " + (focusEvent() ? focusEvent().title : "오늘") + "에서 막힌 말", true); RF = null; closeSheet(); toast("저장했어요. 내일 출근길 카드에 나와요."); gain(15, "막힌 말 기록"); },
-  liveOpen: () => openLive(),
+  liveOpen: () => { closeSheet(); setTimeout(openLive, 30); },
+  liveReal: () => liveReal(),
   liveKey: () => { const v = ($("#lvKey").value || "").trim(); if (!v) return; try { localStorage.setItem("situway-odsay-key", v); } catch(e){} toast("키를 저장했어요."); renderLive(); },
   liveFromHere: () => { LN.from = null; LN.fromResults = []; renderLive(); },
   liveFind: t => liveFind(t.dataset.w),
