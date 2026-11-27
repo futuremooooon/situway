@@ -1474,9 +1474,24 @@ function demoPathBus(){
     {trafficType:1, sectionTime:19, stationCount:8, lane:[{name:"수도권 9호선"}], startName:"가양", endName:"여의도", way:"중앙보훈병원 방면", passStopList:{stations:sub}},
     {trafficType:3, sectionTime:2, distance:150, startX:sub[8].x, startY:sub[8].y, endX:126.9258, endY:37.5208}]};
 }
+function demoSnu(dir){
+  const P = (n, y, x) => ({stationName:n, x, y});
+  const l2out = [P("신촌",37.5552,126.9369),P("홍대입구",37.5571,126.9245),P("합정",37.5495,126.9139),P("당산",37.5341,126.9022),P("영등포구청",37.5254,126.8965),P("문래",37.5179,126.8949),P("신도림",37.5088,126.8913),P("대림",37.4925,126.8950),P("구로디지털단지",37.4851,126.9015),P("신대방",37.4875,126.9131),P("신림",37.4842,126.9297),P("봉천",37.4823,126.9416),P("서울대입구",37.4812,126.9527)];
+  const busIn = [P("서울대입구역",37.4805,126.9525),P("관악구청",37.4782,126.9516),P("서울대정문",37.4659,126.9480),P("서울대 행정관",37.4600,126.9510),P("서울대 신공학관",37.4495,126.9525)];
+  const l2in = [P("서울대입구",37.4812,126.9527),P("낙성대",37.4769,126.9636),P("사당",37.4766,126.9816),P("방배",37.4814,126.9976),P("서초",37.4918,127.0076),P("교대",37.4934,127.0140),P("강남",37.4979,127.0276)];
+  const seg = (type, st, mins, lane, way) => ({trafficType:type, sectionTime:mins, stationCount:st.length - 1, lane:[type === 2 ? {busNo:lane} : {name:lane}], startName:st[0].stationName, endName:st[st.length - 1].stationName, way, passStopList:{stations:st}});
+  const walk = (mins, d, a, b) => ({trafficType:3, sectionTime:mins, distance:d, startX:a.x, startY:a.y, endX:b.x, endY:b.y});
+  if (dir === "to") return {demo:true, info:{totalTime:47, busTransitCount:1, subwayTransitCount:1}, subPath:[
+    walk(3, 200, {x:126.9390, y:37.5560}, l2out[0]), seg(1, l2out, 26, "수도권 2호선", "신도림·서울대입구 방면"),
+    walk(3, 150, l2out[12], busIn[0]), seg(2, busIn, 12, "5511", "서울대 신공학관 방면"), walk(2, 100, busIn[4], {x:126.9530, y:37.4490})]};
+  const busOut = [...busIn].reverse();
+  return {demo:true, info:{totalTime:36, busTransitCount:1, subwayTransitCount:1}, subPath:[
+    walk(2, 100, {x:126.9530, y:37.4490}, busOut[0]), seg(2, busOut, 12, "5511", "서울대입구역 방면"),
+    walk(3, 150, busOut[4], l2in[0]), seg(1, l2in, 13, "수도권 2호선", "사당·강남 방면"), walk(3, 200, l2in[6], {x:127.0290, y:37.4985})]};
+}
 const DEMO_ROUTES = [
-  {id:"sub", title:"우장산역 → 여의도역", desc:"5호선 한 번에 · 약 31분 · 10정거장", make:() => demoPath()},
-  {id:"bus", title:"우장산역 → 여의도역 (버스 환승)", desc:"강서05 버스 → 9호선 · 약 36분 · 환승 1회", make:() => demoPathBus()}
+  {id:"snu-to", title:"신촌역 → 서울대학교 (등교)", desc:"2호선 → 5511번 버스 · 약 47분 · 환승 1회", from:"신촌역 근처", to:"서울대 신공학관", make:() => demoSnu("to")},
+  {id:"snu-from", title:"서울대학교 → 강남역 (퇴근 후 약속)", desc:"5511번 버스 → 2호선 · 약 36분 · 환승 1회", from:"서울대 신공학관", to:"강남역", make:() => demoSnu("from")}
 ];
 const segLabel = s => s.trafficType === 3 ? `도보 ${s.sectionTime}분` : s.trafficType === 1 ? (s.lane && s.lane[0] && s.lane[0].name || "지하철").replace("수도권 ", "") : `버스 ${(s.lane || []).map(l => l.busNo).filter(Boolean).slice(0, 2).join("·") || ""}`;
 const segIcon = s => s.trafficType === 3 ? "walk" : s.trafficType === 1 ? "subway" : "bus";
@@ -3063,7 +3078,7 @@ const A = {
   liveSearch: () => liveSearch(),
   liveBack: () => { LN.step = "setup"; renderLive(); },
   livePickPath: t => liveBegin(LN.paths[+t.dataset.i]),
-  liveDemoRoute: t => { const r = DEMO_ROUTES.find(x => x.id === t.dataset.id); LN.fromName = "우장산역 근처"; LN.to = {name:"여의도역"}; liveBegin(r.make()); },
+  liveDemoRoute: t => { const r = DEMO_ROUTES.find(x => x.id === t.dataset.id); LN.fromName = r.from; LN.to = {name:r.to}; liveBegin(r.make()); },
   liveDemo: () => { LN.fromName = "우장산역 근처"; LN.to = {name:"여의도역"}; liveBegin(demoPath()); },
   liveBoard: () => { LN.boarded = true; LN.boardedAt = Date.now(); toast("탑승으로 표시했어요. 지하에서는 시간으로 위치를 추정해요."); renderLive(); },
   liveNext: () => liveAdvance(),
