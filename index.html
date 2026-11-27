@@ -287,6 +287,10 @@ textarea.input{resize:vertical;min-height:120px;line-height:1.55}
 .lvstops li.now::before{background:var(--brand);border-color:var(--brand)}
 .lvstops li.end{color:var(--ink)}
 .lvstops em{font-style:normal;font-size:12px;color:var(--brand-text);margin-left:4px}
+.thumb{position:relative;flex:none;display:block;border-radius:16px;box-shadow:0 4px 12px rgba(30,60,140,.14)}
+.thumb svg{display:block}
+.thumb em{position:absolute;right:4px;bottom:4px;font-style:normal;font-size:11px;font-weight:700;line-height:1;padding:3px 5px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff}
+.odusage{padding:10px 12px;border-radius:12px;background:var(--brand-soft)}
 .lvst,.lvpath{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;color:var(--ink);font:inherit}
 .lvpath{flex-direction:column;align-items:stretch;gap:8px;text-align:left}
 .rule{display:flex;align-items:flex-start;gap:12px;padding:12px 0}
@@ -1026,6 +1030,20 @@ function mascot(size = 72, mood = "happy"){
   return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="94" rx="26" ry="4" fill="rgba(0,0,0,.08)"/><path d="M22 18h56a16 16 0 0 1 16 16v30a16 16 0 0 1-16 16H48l-15 12V80H22A16 16 0 0 1 6 64V34a16 16 0 0 1 16-16z" fill="#3182F6"/><path d="M14 30a10 10 0 0 1 10-8h20" stroke="rgba(255,255,255,.35)" stroke-width="4" fill="none" stroke-linecap="round"/>${eyes}<ellipse cx="25" cy="59" rx="5.5" ry="3.2" fill="#FF8FA3" opacity=".75"/><ellipse cx="75" cy="59" rx="5.5" ry="3.2" fill="#FF8FA3" opacity=".75"/><path d="M41 59q9 8 18 0" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="82" cy="14" r="7" fill="#FFB800"/></svg>`;
 }
 const TILE = {walk:["rgba(3,178,108,.15)","#03A866"], bus:["rgba(49,130,246,.15)","#2272EB"], subway:["rgba(124,92,250,.15)","#6B4FD8"], car:["rgba(255,122,0,.15)","#E8650A"], phone:["rgba(3,178,108,.15)","#03A866"], call:["rgba(3,178,108,.15)","#03A866"], email:["rgba(49,130,246,.15)","#2272EB"], mail:["rgba(49,130,246,.15)","#2272EB"], chat:["rgba(124,92,250,.15)","#6B4FD8"], cards:["rgba(255,184,0,.2)","#C98A00"], card:["rgba(255,184,0,.2)","#C98A00"], plan:["rgba(3,178,108,.15)","#03A866"], pack:["rgba(49,130,246,.15)","#2272EB"], review:["rgba(240,68,82,.12)","#E0384A"], quiz:["rgba(240,68,82,.12)","#E0384A"], practice:["rgba(49,130,246,.15)","#2272EB"], target:["rgba(255,184,0,.2)","#C98A00"]};
+/* illustrated thumbnails for recommendation cards */
+const THUMB = {
+  audio:["#5B9BFF","#2563EB",'<path d="M20 40v-6a16 16 0 0 1 32 0v6" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><rect x="15" y="38" width="10" height="16" rx="5" fill="#fff"/><rect x="47" y="38" width="10" height="16" rx="5" fill="#fff"/><g fill="#fff" opacity=".85"><rect x="30" y="41" width="3" height="10" rx="1.5"/><rect x="35" y="37" width="3" height="18" rx="1.5"/><rect x="40" y="43" width="3" height="6" rx="1.5"/></g>'],
+  video:["#8B6CFF","#4F46E5",'<rect x="12" y="18" width="48" height="32" rx="6" fill="#fff" opacity=".95"/><path d="M32 27l11 7-11 7z" fill="#5B47E0"/><circle cx="20" cy="56" r="5" fill="#FFD66B"/><circle cx="31" cy="56" r="5" fill="#FF9EB5"/><rect x="40" y="53" width="18" height="6" rx="3" fill="#fff" opacity=".6"/>'],
+  cards:["#FFC24B","#F5871F",'<rect x="16" y="20" width="34" height="40" rx="6" fill="#fff" opacity=".55" transform="rotate(-10 33 40)"/><rect x="22" y="16" width="34" height="40" rx="6" fill="#fff"/><text x="39" y="42" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="800" fill="#E67700">Aa</text>'],
+  email:["#4CC3FF","#2F7BF6",'<rect x="13" y="21" width="46" height="32" rx="6" fill="#fff"/><path d="M15 24l21 15 21-15" fill="none" stroke="#2F7BF6" stroke-width="3" stroke-linejoin="round"/><circle cx="56" cy="20" r="7" fill="#FF5A6E"/><path d="M53 20h6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>'],
+  call:["#3ED69B","#0E9F6E",'<path d="M24 16c3 0 5 6 5 8s-3 3-3 5 6 10 9 11 3-2 5-2 8 2 8 5-3 7-7 7C29 50 20 36 18 26c-1-5 2-10 6-10z" fill="#fff"/><rect x="40" y="14" width="20" height="14" rx="5" fill="#fff" opacity=".85"/><path d="M44 28l-2 5 6-5" fill="#fff" opacity=".85"/>'],
+  chat:["#B08CFF","#7C3AED",'<rect x="12" y="16" width="34" height="22" rx="8" fill="#fff"/><path d="M20 38l-2 7 8-7" fill="#fff"/><rect x="28" y="34" width="32" height="20" rx="8" fill="#FFD66B"/><path d="M52 54l2 6-8-6" fill="#FFD66B"/><g fill="#7C3AED"><circle cx="22" cy="27" r="2.4"/><circle cx="29" cy="27" r="2.4"/><circle cx="36" cy="27" r="2.4"/></g>'],
+  trip:["#FF9F5A","#F0436A",'<circle cx="36" cy="38" r="18" fill="#fff" opacity=".9"/><path d="M18 38h36M36 20c-6 6-6 30 0 36M36 20c6 6 6 30 0 36" fill="none" stroke="#F06A55" stroke-width="2"/><path d="M44 18l12-6 3 3-8 10 2 9-3 2-5-8-7 3-2-2 5-6z" fill="#fff" stroke="#F0436A" stroke-width="1.5" stroke-linejoin="round"/>'],
+  bus:["#3FD07A","#139A4F",'<rect x="18" y="14" width="36" height="40" rx="8" fill="#fff"/><rect x="22" y="20" width="28" height="14" rx="3" fill="#BFEFD3"/><circle cx="26" cy="44" r="3" fill="#139A4F"/><circle cx="46" cy="44" r="3" fill="#139A4F"/><rect x="21" y="54" width="7" height="6" rx="2" fill="#fff"/><rect x="44" y="54" width="7" height="6" rx="2" fill="#fff"/><path d="M58 22a9 9 0 0 1 0 12M62 18a15 15 0 0 1 0 20" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>'],
+  pack:["#5B9BFF","#3557E8",'<rect x="14" y="26" width="44" height="28" rx="6" fill="#fff"/><path d="M28 26v-5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v5" fill="none" stroke="#fff" stroke-width="3.5"/><rect x="14" y="36" width="44" height="4" fill="#C7D7FF"/><rect x="32" y="34" width="8" height="8" rx="2" fill="#3557E8"/>']
+};
+const thumb = (k, badge, size = 64) => { const [a, b, art] = THUMB[k] || THUMB.pack, id = "tg" + k; return `<span class="thumb" style="width:${size}px;height:${size}px"><svg viewBox="0 0 72 72" width="${size}" height="${size}" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="72" height="72" rx="16" fill="url(#${id})"/><circle cx="62" cy="8" r="20" fill="#fff" opacity=".12"/><circle cx="4" cy="70" r="16" fill="#fff" opacity=".1"/>${art}</svg>${badge ? `<em>${esc(badge)}</em>` : ""}</span>`; };
+const thumbOf = r => ({podcast:"audio", review:"audio", video:"video", unit:"video", cards:"cards", quiz:"cards", email:"email", call:"call", chat:"chat", plan:"trip", local:"trip", pack:"pack"})[r] || "pack";
 const tile = (k, icon, size = 48, isz = 22) => { const [b, f] = TILE[k] || TILE.pack; return `<div class="qicon" style="width:${size}px;height:${size}px;background:${b};color:${f}">${ic(icon, isz)}</div>`; };
 function Q(){ const d = sod(new Date()).toISOString(); if (!S.quest || S.quest.date !== d) S.quest = {date:d, commute:0, cards:0, reflect:0, claimed:false}; return S.quest; }
 function questList(){ const q = Q(); return [
@@ -1370,14 +1388,33 @@ const ODSAY = "https://api.odsay.com/v1/api/";
 const odKey = () => CONFIG.ODSAY_KEY || (() => { try { return localStorage.getItem("situway-odsay-key") || ""; } catch(e){ return ""; } })();
 let LN = null;
 const geoDist = (a, b) => { const R = 6371000, r = Math.PI / 180, dLat = (b.y - a.y) * r, dLng = (b.x - a.x) * r; const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.y * r) * Math.cos(b.y * r) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+/* ODsay 무료 키는 하루 30회(모든 사용자 공유)라 아껴 씀: 결과 캐시 + 기기별 하루 한도 + 자주 가는 역은 검색 없이 선택 */
+const OD_DAY_LIMIT = 5, OD_TOTAL = 30;
+const odStore = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || "null"); localStorage.setItem(k, JSON.stringify(v)); } catch(e){ return null; } };
+const odToday = () => { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+function odUsed(){ const c = odStore("situway-odsay-count"); return c && c.d === odToday() ? c.n : 0; }
+const odLeft = () => Math.max(0, OD_DAY_LIMIT - odUsed());
 async function odsay(api, params){
+  const key = api + "?" + Object.keys(params).sort().map(k => k + "=" + params[k]).join("&");
+  const cache = odStore("situway-odsay-cache") || {};
+  const hit = cache[key];
+  if (hit && Date.now() - hit.t < (api === "searchStation" ? 30 : 7) * 86400000) return hit.r;
+  if (!odLeft()) throw new Error(`오늘 이 기기의 실제 검색 ${OD_DAY_LIMIT}회를 다 썼어요. 내일 다시 쓰거나 시연 경로로 보세요.`);
+  odStore("situway-odsay-count", {d:odToday(), n:odUsed() + 1});
   const q = new URLSearchParams({...params, apiKey:odKey()});
   const r = await fetch(ODSAY + api + "?" + q.toString());
   const j = await r.json();
   const err = j.error && (Array.isArray(j.error) ? j.error[0] : j.error);
   if (err) throw new Error(err.msg || err.message || "ODsay 오류");
+  const keys = Object.keys(cache); if (keys.length > 60) keys.sort((a, b) => cache[a].t - cache[b].t).slice(0, keys.length - 60).forEach(k => delete cache[k]);
+  cache[key] = {t:Date.now(), r:j.result}; odStore("situway-odsay-cache", cache);
   return j.result;
 }
+/* 자주 가는 역: 고르면 API를 쓰지 않음 */
+const QUICK_ST = [["우장산",126.8363,37.5488],["여의도",126.9243,37.5216],["서울역",126.9707,37.5547],["시청",126.9769,37.5657],["광화문",126.9768,37.5710],["을지로입구",126.9822,37.5660],["강남",127.0276,37.4979],["역삼",127.0364,37.5006],["선릉",127.0490,37.5045],["삼성",127.0631,37.5088],["잠실",127.1001,37.5133],["홍대입구",126.9245,37.5571],["신촌",126.9369,37.5552],["서울대입구",126.9527,37.4812],["판교",127.1111,37.3948]];
+const stName = n => /역$/.test(n) ? n : n + "역";
+const quickRow = w => { const cur = w === "to" ? LN.to : LN.from; return `<span class="xs muted" style="margin-top:8px">자주 가는 역 · 고르면 검색 횟수를 쓰지 않아요</span><div class="row wrap" style="gap:6px;margin-top:4px">${QUICK_ST.map((q, i) => `<button class="chip ${cur && cur.name === stName(q[0]) ? "brand" : ""}" data-act="liveQuick" data-w="${w}" data-i="${i}">${esc(stName(q[0]))}</button>`).join("")}</div>`; };
+const odUsageLine = () => `<p class="xs muted" style="margin:0">실제 검색: 오늘 이 기기에서 <b>${odUsed()}/${OD_DAY_LIMIT}회</b> 사용 · 같은 검색은 저장된 결과를 다시 써서 횟수가 줄지 않아요. 전체 한도는 모든 사용자 합쳐 하루 ${OD_TOTAL}회예요.</p>`;
 /* demo path for when no key is set: 5호선 우장산 → 여의도 (좌표는 시연용 근사값) */
 function demoPath(){
   const names = ["우장산","화곡","까치산","신정","목동","오목교","양평","영등포구청","영등포시장","신길","여의도"];
@@ -1401,21 +1438,22 @@ function liveSetupBody(){
     <p class="small muted">실제 대중교통 경로를 찾고, 휴대폰 위치로 탈 곳과 내릴 곳을 알려 줘요. 안내 중에는 화면을 켜 두세요.</p>
     ${key ? "" : `<div class="card"><h3>ODsay API 키</h3><p class="xs muted">실제 경로 검색에 필요해요. 키가 없으면 시연 경로로 안내를 체험할 수 있어요.</p>
       <div class="row" style="gap:8px"><input class="input" id="lvKey" placeholder="ODsay 웹 API 키" style="flex:1"><button class="btn" data-act="liveKey">저장</button></div></div>`}
+    ${key ? `<div class="odusage">${odUsageLine()}</div>` : ""}
     <div class="card">
       <div class="field"><label>출발</label>
         <div class="row" style="gap:8px"><button class="toggle" data-act="liveFromHere" aria-pressed="${!LN.from}">${ic("target", 16)} 현재 위치</button>${LN.from ? `<span class="chip">${esc(LN.from.name)}</span>` : ""}</div>
         <div class="row" style="gap:8px;margin-top:8px"><input class="input" id="lvFromQ" value="${esc(LN.fromQ)}" placeholder="또는 역·정류장 이름" style="flex:1"><button class="btn" data-act="liveFind" data-w="from" ${key ? "" : "disabled"}>검색</button></div>
-        ${LN.fromResults.length ? `<div class="list">${LN.fromResults.map((r, i) => stRow(r, i, "from")).join("")}</div>` : ""}</div>
+        ${LN.fromResults.length ? `<div class="list">${LN.fromResults.map((r, i) => stRow(r, i, "from")).join("")}</div>` : quickRow("from")}</div>
       <div class="field"><label>도착</label>
         <div class="row" style="gap:8px"><input class="input" id="lvToQ" value="${esc(LN.q)}" placeholder="역·정류장 이름 (예: 여의도역)" style="flex:1"><button class="btn" data-act="liveFind" data-w="to" ${key ? "" : "disabled"}>검색</button></div>
         ${LN.to ? `<span class="chip brand" style="margin-top:8px;align-self:flex-start">${esc(LN.to.name)}</span>` : ""}
-        ${LN.results.length ? `<div class="list">${LN.results.map((r, i) => stRow(r, i, "to")).join("")}</div>` : ""}</div>
+        ${LN.results.length ? `<div class="list">${LN.results.map((r, i) => stRow(r, i, "to")).join("")}</div>` : quickRow("to")}</div>
     </div>
     ${LN.err ? `<p class="small" style="color:var(--danger,#E0384A)">${esc(LN.err)}</p>` : ""}`;
 }
 const stRow = (r, i, w) => `<button class="lvst" data-act="livePickSt" data-w="${w}" data-i="${i}">${ic(r.stationClass === 2 ? "subway" : "bus", 18)}<span class="stack" style="gap:0;flex:1;text-align:left"><b class="small">${esc(r.stationName)}</b><span class="xs muted">${esc(r.stationClass === 2 ? (r.laneName || "지하철") : (r.arsID ? "정류장 " + r.arsID : "버스 정류장"))}${r.do ? " · " + esc(r.do + " " + (r.gu || "")) : ""}</span></span></button>`;
 function livePathsBody(){
-  return `<p class="small muted">${esc(LN.fromName || "현재 위치")} → ${esc(LN.to ? LN.to.name : "")}</p>
+  return `<p class="small muted">${esc(LN.fromName || "현재 위치")} → ${esc(LN.to ? LN.to.name : "")}</p>${odUsageLine()}
     <div class="stack" style="gap:10px">${LN.paths.map((p, i) => `<button class="lvpath" data-act="livePickPath" data-i="${i}">
       <div class="row between"><b style="font-size:20px">${p.info.totalTime}분</b><span class="small muted">환승 ${Math.max(0, (p.info.busTransitCount || 0) + (p.info.subwayTransitCount || 0) - 1)}회</span></div>
       <div class="row wrap" style="gap:6px">${p.subPath.filter(s => s.sectionTime > 0).map(s => `<span class="chip ${s.trafficType === 3 ? "" : "brand"}">${ic(segIcon(s), 14)} ${esc(segLabel(s))}</span>`).join("")}</div>
@@ -1439,7 +1477,7 @@ function liveNavBody(){
 function renderLive(){
   if (!LN) return;
   let body, foot = "";
-  if (LN.step === "setup") { body = liveSetupBody(); foot = `${odKey() ? "" : `<button class="btn" data-act="liveDemo">시연 경로로 보기</button>`}<button class="btn primary" data-act="liveSearch" ${odKey() && LN.to ? "" : "disabled"}>경로 찾기</button>`; }
+  if (LN.step === "setup") { body = liveSetupBody(); foot = `${odKey() ? "" : `<button class="btn" data-act="liveDemo">시연 경로로 보기</button>`}<button class="btn primary" data-act="liveSearch" ${odKey() && LN.to ? "" : "disabled"}>경로 찾기${odKey() ? ` (남은 ${odLeft()}회)` : ""}</button>`; }
   else if (LN.step === "paths") { body = livePathsBody(); foot = `<button class="btn" data-act="liveBack">다시 검색</button>`; }
   else { body = liveNavBody(); const s = LN.path.subPath[LN.seg]; foot = `<button class="btn" data-act="liveStop">안내 종료</button>${s.trafficType !== 3 && !LN.boarded ? `<button class="btn brand" data-act="liveBoard">탔어요</button>` : ""}<button class="btn primary" data-act="liveNext">${LN.seg >= LN.path.subPath.length - 1 ? "도착" : "다음 구간"}</button>`; }
   sheet("실시간 승하차 알림", body, foot, "live");
@@ -1457,7 +1495,7 @@ function hereNow(){ return new Promise((res, rej) => { if (!navigator.geolocatio
 async function liveSearch(){
   LN.err = ""; patchLiveFoot("경로를 찾는 중…");
   try {
-    const from = LN.from || await hereNow(); LN.fromName = LN.from ? LN.from.name : "현재 위치";
+    const here = LN.from ? null : await hereNow(); const from = LN.from || {x:+here.x.toFixed(3), y:+here.y.toFixed(3)}; LN.fromName = LN.from ? LN.from.name : "현재 위치";
     const r = await odsay("searchPubTransPathT", {SX:from.x, SY:from.y, EX:LN.to.x, EY:LN.to.y, OPT:"0"});
     LN.paths = (r && r.path || []).slice(0, 3);
     if (!LN.paths.length) throw new Error("가는 경로가 없어요");
@@ -1636,16 +1674,16 @@ function vToday(){
   const tgt = S.weekly.minimal ? 1 : S.weekly.target, used = S.exprs.reduce((a, x) => a + (x.used || 0), 0);
   const qs = questList(), qn = qs.filter(x => x.prog >= 1).length, qd = Q();
   const recs = [];
-  if (ev) recs.push({act:"practice", f:"podcast", ev:ev.id, tile:"pack", icon:"spk", title:pack.title + " 대화 듣기", meta:"7분 · 귀로 듣기", why:`${relDay(ev.start)} ${fmtTime(ev.start)} ${ev.title} 준비`});
+  if (ev) recs.push({act:"practice", f:"podcast", ev:ev.id, th:"audio", badge:"7분", tile:"pack", icon:"spk", title:pack.title + " 대화 듣기", meta:"7분 · 귀로 듣기", why:`${relDay(ev.start)} ${fmtTime(ev.start)} ${ev.title} 준비`});
   const uid0 = ev && ev.kind === "travel" ? "hotel" : "meeting", uu = UNITS[uid0], upr = unitProg(uid0);
-  if (!upr.done) recs.push({act:"unit", u:uid0, tile:"practice", icon:"play", title:"영상 유닛 · " + uu.title, meta:`6단계 약 ${uu.mins}분${upr.step ? " · " + (upr.step + 1) + "단계부터" : ""}`, why:ev ? `${relDay(ev.start)} ${ev.title} 전에 영상으로 익혀요` : "상황을 보고, 연습하고, 실제로 해 봐요"});
+  if (!upr.done) recs.push({act:"unit", u:uid0, th:"video", badge:uu.mins + "분", tile:"practice", icon:"play", title:"영상 유닛 · " + uu.title, meta:`6단계 약 ${uu.mins}분${upr.step ? " · " + (upr.step + 1) + "단계부터" : ""}`, why:ev ? `${relDay(ev.start)} ${ev.title} 전에 영상으로 익혀요` : "상황을 보고, 연습하고, 실제로 해 봐요"});
   const hard = S.exprs.filter(x => x.review).length;
-  recs.push({act:"practice", f:"cards", ev:ev ? ev.id : "", tile:"cards", icon:"card", title:"표현 카드 5장", meta:"2분 · 짧은 구간에 딱", why:hard ? `복습할 표현 ${hard}개가 기다리고 있어요` : "오늘 배울 표현 미리 보기"});
+  recs.push({act:"practice", f:"cards", ev:ev ? ev.id : "", th:"cards", badge:"2분", tile:"cards", icon:"card", title:"표현 카드 5장", meta:"2분 · 짧은 구간에 딱", why:hard ? `복습할 표현 ${hard}개가 기다리고 있어요` : "오늘 배울 표현 미리 보기"});
   const task = recommendations().find(x => !S.done[x.k] && x.type !== "plan");
-  if (task) recs.push({act:"runTask", k:task.k, tile:task.type, icon:{email:"mail", call:"phone", chat:"chat", cards:"card", pack:"book", review:"book"}[task.type] || "task", title:task.title, meta:(task.min || 5) + "분 · 실전 과제", why:task.why});
+  if (task) recs.push({act:"runTask", k:task.k, th:thumbOf(task.type), badge:(task.min || 5) + "분", tile:task.type, icon:{email:"mail", call:"phone", chat:"chat", cards:"card", pack:"book", review:"book"}[task.type] || "task", title:task.title, meta:(task.min || 5) + "분 · 실전 과제", why:task.why});
   const plan = recommendations().find(x => x.type === "plan");
-  if (plan) recs.push({act:"runTask", k:plan.k, tile:"plan", icon:"plane", title:plan.title, meta:"여행 준비", why:plan.why});
-  const recBtn = r => `<button class="rec" data-act="${r.act}" ${r.f ? `data-f="${r.f}"` : ""} ${r.ev !== undefined ? `data-ev="${r.ev}"` : ""} ${r.k ? `data-k="${r.k}"` : ""} ${r.u ? `data-u="${r.u}"` : ""}>${tile(r.tile, r.icon, 56)}<span class="stack" style="gap:2px;flex:1;text-align:left;min-width:0"><b class="evtitle">${esc(r.title)}</b><span class="muted">${esc(r.meta)}</span><span class="rec-why">${esc(r.why)}</span></span>${ic("chev", 22)}</button>`;
+  if (plan) recs.push({act:"runTask", k:plan.k, th:"trip", tile:"plan", icon:"plane", title:plan.title, meta:"여행 준비", why:plan.why});
+  const recBtn = r => `<button class="rec" data-act="${r.act}" ${r.f ? `data-f="${r.f}"` : ""} ${r.ev !== undefined ? `data-ev="${r.ev}"` : ""} ${r.k ? `data-k="${r.k}"` : ""} ${r.u ? `data-u="${r.u}"` : ""}>${r.th ? thumb(r.th, r.badge) : tile(r.tile, r.icon, 56)}<span class="stack" style="gap:2px;flex:1;text-align:left;min-width:0"><b class="evtitle">${esc(r.title)}</b><span class="muted">${esc(r.meta)}</span><span class="rec-why">${esc(r.why)}</span></span>${ic("chev", 22)}</button>`;
   return `
   <div class="stack" style="gap:2px"><span class="muted">${fmtDay(now)}</span><h1>${greet}, ${esc(S.profile.name)}님</h1></div>
   <div class="card dash">
@@ -1656,8 +1694,8 @@ function vToday(){
       <div><span class="stat-v">${used}<small>번</small></span><span class="stat-k">실전 사용</span></div>
     </div>
   </div>
-  ${S.resume ? `<button class="rec" data-act="resume">${tile("practice", "play", 56)}<span class="stack" style="gap:2px;flex:1;text-align:left"><span class="muted">이어서 하기</span><b class="evtitle">${esc(S.resume.label)}</b></span>${ic("chev", 22)}</button>` : ""}
-  <button class="rec livecard" data-act="liveOpen">${tile("bus", "bus", 56)}<span class="stack" style="gap:2px;flex:1;text-align:left"><b class="evtitle">실시간 승하차 알림</b><span class="muted">실제 경로를 찾고 GPS로 탈 곳·내릴 곳을 알려 줘요</span></span>${ic("chev", 22)}</button>
+  ${S.resume ? `<button class="rec" data-act="resume">${thumb("video", "이어서")}<span class="stack" style="gap:2px;flex:1;text-align:left"><span class="muted">이어서 하기</span><b class="evtitle">${esc(S.resume.label)}</b></span>${ic("chev", 22)}</button>` : ""}
+  <button class="rec livecard" data-act="liveOpen">${thumb("bus", "GPS")}<span class="stack" style="gap:2px;flex:1;text-align:left"><b class="evtitle">실시간 승하차 알림</b><span class="muted">실제 경로를 찾고 GPS로 탈 곳·내릴 곳을 알려 줘요</span></span>${ic("chev", 22)}</button>
   <div class="sec-title"><h2>오늘의 추천</h2><span class="muted small">내 일정에 맞춰 골랐어요</span></div>
   <div class="stack" style="gap:10px">${recs.map(recBtn).join("")}</div>
   <div class="card">
@@ -1665,7 +1703,7 @@ function vToday(){
     <div class="list">${qs.map(x => `<button class="quest" data-act="quest" data-k="${x.k}">${tile(x.tile, x.icon, 52)}<span class="stack" style="gap:6px;text-align:left"><b>${x.title}</b><span class="qbar"><span style="width:${x.prog * 100}%"></span></span></span><span class="qdone ${x.prog >= 1 ? "on" : ""}">${x.prog >= 1 ? "✓" : ic("chev", 20)}</span></button>`).join("")}</div>
     ${qs.every(x => x.prog >= 1) && !qd.claimed ? `<button class="btn primary block" data-act="claimQuest">보상 받기 +50 XP</button>` : ""}
   </div>
-  <button class="rec" data-act="openReflect">${tile("chat", "chat", 56)}<span class="stack" style="gap:2px;flex:1;text-align:left"><b class="evtitle">오늘 막힌 말 기록하기</b><span class="muted">하고 싶었던 말을 한국어로 적으면 영어 문장으로 바꿔요</span></span>${ic("chev", 22)}</button>
+  <button class="rec" data-act="openReflect">${thumb("chat")}<span class="stack" style="gap:2px;flex:1;text-align:left"><b class="evtitle">오늘 막힌 말 기록하기</b><span class="muted">하고 싶었던 말을 한국어로 적으면 영어 문장으로 바꿔요</span></span>${ic("chev", 22)}</button>
   `;
 }
 function openReflect(){
@@ -2898,6 +2936,7 @@ const A = {
   liveKey: () => { const v = ($("#lvKey").value || "").trim(); if (!v) return; try { localStorage.setItem("situway-odsay-key", v); } catch(e){} toast("키를 저장했어요."); renderLive(); },
   liveFromHere: () => { LN.from = null; LN.fromResults = []; renderLive(); },
   liveFind: t => liveFind(t.dataset.w),
+  liveQuick: t => { const q = QUICK_ST[+t.dataset.i], v = {name:stName(q[0]), x:q[1], y:q[2]}; if (t.dataset.w === "to") { LN.to = v; LN.results = []; LN.q = ""; } else { LN.from = v; LN.fromResults = []; LN.fromQ = ""; } renderLive(); },
   livePickSt: t => { const w = t.dataset.w, r = (w === "to" ? LN.results : LN.fromResults)[+t.dataset.i]; const v = {name:r.stationName + (r.stationClass === 2 ? "역" : ""), x:+r.x, y:+r.y}; if (w === "to") { LN.to = v; LN.results = []; } else { LN.from = v; LN.fromResults = []; } renderLive(); },
   liveSearch: () => liveSearch(),
   liveBack: () => { LN.step = "setup"; renderLive(); },
