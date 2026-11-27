@@ -1077,7 +1077,7 @@ let SAMPLE = null, TTS = null, DICT = null, micTarget = null, micOn = false;
 function aiPill(){ const p = $("#aiPill"); if (!p) return; p.textContent = SAMPLE ? "AI 연결됨" : "시연 모드"; p.classList.toggle("on", !!SAMPLE); p.title = SAMPLE ? "Claude가 피드백과 대화를 만들어요" : "AI 없이 규칙 기반으로 동작해요"; }
 (function initCaps(){
   const c = window.claude;
-  if (!c || typeof c.use !== "function") { setTimeout(() => { aiPill(); GC.state = CONFIG.GOOGLE_CLIENT_ID ? "gis" : "ics"; if (S.tab === "calendar" && !$("#layer").innerHTML) render(); }, 50); return; }
+  if (!c || typeof c.use !== "function") { if (CONFIG.GOOGLE_CLIENT_ID) loadScript("https://accounts.google.com/gsi/client").catch(() => {}); setTimeout(() => { aiPill(); GC.state = CONFIG.GOOGLE_CLIENT_ID ? "gis" : "ics"; if (S.tab === "calendar" && !$("#layer").innerHTML) render(); }, 50); return; }
   c.use("sample").then(s => { SAMPLE = s; aiPill(); }).catch(() => aiPill());
   c.use("tts").then(t => { TTS = t; }).catch(()=>{});
   c.use("mcp").then(m => { MCP = m; gcalStatus(); }).catch(() => { GC.state = CONFIG.GOOGLE_CLIENT_ID ? "gis" : "ics"; });
